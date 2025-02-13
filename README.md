@@ -1,221 +1,137 @@
 # Rust WASM Calculator
 
-A WebAssembly calculator built with Rust and Bootstrap 5, following test-driven development practices.
+[![Rust](https://img.shields.io/badge/rust-stable-brightgreen.svg)](https://www.rust-lang.org/)
+[![wasm-pack](https://img.shields.io/badge/wasm--pack-latest-blue.svg)](https://rustwasm.github.io/wasm-pack/)
+[![Bootstrap](https://img.shields.io/badge/bootstrap-5.3.0-purple.svg)](https://getbootstrap.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Project Structure
+## Overview
 
-```
-rust-wasm-calc/
-├── Cargo.toml          # Rust package configuration
-├── src/
-│   └── lib.rs         # Rust library code with WASM bindings
-├── tests/
-│   └── web.rs         # Integration tests for browser environment
-├── pkg/               # Generated WASM package (after build)
-└── index.html         # Web interface with Bootstrap 5
-```
+Rust WASM Calculator is a WebAssembly calculator application. It is built using Rust and Bootstrap 5. The project follows test-driven development practices.
 
-## Prerequisites
+## 🚀 Quick Start
 
-Before you begin, ensure you have the following installed:
-- [Rust](https://rustup.rs/) (latest stable version)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-- [Node.js](https://nodejs.org/) (for running the development server)
-- A modern browser (Chrome, Firefox, or Safari) for running tests
+1. **Prerequisites:** Ensure you have Rust, wasm-pack, and Node.js installed.
+2. **Clone Repository:** Clone the repository to your local machine.
+   ```bash
+   git clone https://github.com/your-username/rust-wasm-calc.git # Replace with actual repo URL
+   cd rust-wasm-calc
+   ```
+3. **Build WASM:** Build the WebAssembly module.
+   ```bash
+   wasm-pack build --target web
+   ```
+4. **Start Development Server:** Run a local HTTP server to serve the application.
+   ```bash
+   npm install -g http-server # If not already installed
+   http-server . -p 8080
+   ```
+5. **Access in Browser:** Open your browser and go to `http://localhost:8080`.
 
-## Development Roadmap
+## 📦 Core Package: `rust-wasm-calc`
 
-### Phase 1: Basic Operations
-- [x] Project setup and configuration
-- [x] WASM binding implementation
-- [x] Bootstrap UI implementation
-- [x] Testing infrastructure
-- [x] Dark/Light theme support
-- [ ] Addition operation
-- [ ] Subtraction operation
-- [ ] Multiplication operation
-- [ ] Division operation
+### Installation
 
-### Phase 2: Advanced Features
-- [ ] Memory functions (M+, M-, MR, MC)
-- [ ] History of calculations
-- [ ] Scientific calculator functions
-- [ ] Keyboard input support
-- [ ] Mobile-first responsive design
+The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --target web` to generate the package in the `pkg/` directory.
 
-### Phase 3: Optimizations
-- [ ] Performance benchmarking
-- [ ] WASM size optimization
-- [ ] Error handling improvements
-- [ ] Accessibility features (WCAG 2.1)
+### API
 
-## UI Implementation
+#### `hello(name: &str) -> String`
 
-The calculator uses Bootstrap 5.3.0 for its user interface with the following features:
+- **Description:**  Returns a greeting string.
+- **Parameters:**
+    - `name`:  The name to include in the greeting.
+- **Returns:**  A string formatted as "Hello, {name}!".
 
-### Components
-- Square design using `rounded-0` class
-- Bootstrap Icons for symbols
-- Bootstrap's theme system for dark/light modes
-- Bootstrap's grid system for button layout
-- Bootstrap's utility classes for spacing and alignment
+**Example Usage (JavaScript):**
 
-### Custom Styling
-Only minimal custom CSS is used to extend Bootstrap:
-```css
-.btn-calc {
-    min-width: 60px;
-    height: 60px;
+```javascript
+import init, { hello } from './pkg/rust_wasm_calc.js';
+
+async function run() {
+  await init();
+  const message = hello("User");
+  console.log(message); // Output: Hello, User!
 }
-#display {
-    font-family: 'Roboto Mono', monospace;
-    height: 80px;
-    font-size: 2rem;
-}
+
+run();
 ```
 
-### Theme Support
-- Light/Dark mode toggle
-- System-wide theme consistency
-- Bootstrap's `data-bs-theme` attribute
-- Automatic theme switching
+## ⚙️ Configuration
 
-## Testing
+### Dependencies
 
-The project uses a comprehensive testing approach with multiple test types and environments.
+- **Rust:** Programming language for core logic.
+- **wasm-pack:** Tool to build Rust to WebAssembly.
+- **Node.js:**  Required for development server and potentially testing.
+- **wasm-bindgen:**  Facilitates communication between Rust and JavaScript.
+- **Bootstrap 5.3.0:**  CSS framework for user interface.
+- **Bootstrap Icons:** Icon library for UI elements.
+- **console_error_panic_hook:**  Provides improved error messages in the browser console.
 
-### Test Types
+### Features
 
-1. **Unit Tests**
-   ```rust
-   #[test]
-   fn test_hello_rust() {
-       let result = hello("Rust");
-       assert_eq!(result, "Hello, Rust!");
-   }
-   ```
+- `default`: Enables the `console_error_panic_hook` feature. This is recommended for better debugging in browser environments.
 
-2. **WASM Browser Tests**
-   ```rust
-   #[wasm_bindgen_test]
-   fn test_hello_wasm_browser() {
-       let result = hello("WASM");
-       assert_eq!(result, "Hello, WASM!");
-   }
-   ```
-
-3. **Integration Tests** (in `tests/web.rs`)
-   ```rust
-   #[wasm_bindgen_test]
-   fn test_hello_unicode() {
-       let result = hello("🌍");
-       assert_eq!(result, "Hello, 🌍!");
-   }
-   ```
+## 🧪 Advanced Usage
 
 ### Running Tests
 
-```bash
-# Run regular Rust tests
-cargo test
+- **Unit Tests (Rust):** Execute Rust unit tests.
+  ```bash
+  cargo test
+  ```
+- **WASM Tests (Node.js):** Run WASM tests in a Node.js environment.
+  ```bash
+  wasm-pack test --node
+  ```
+- **WASM Tests (Browser):** Run WASM tests in a headless browser (Chrome or Firefox).
+  ```bash
+  wasm-pack test --chrome --headless
+  wasm-pack test --firefox --headless
+  ```
 
-# Run tests in Node.js
-wasm-pack test --node
+### Building for Production
 
-# Run tests in Chrome
-wasm-pack test --chrome --headless
-
-# Run tests in Firefox
-wasm-pack test --firefox --headless
-```
-
-## Calculator Functionality
-
-The calculator implements the following features:
-
-### Basic Operations
-```rust
-pub fn add(a: f64, b: f64) -> f64;
-pub fn subtract(a: f64, b: f64) -> f64;
-pub fn multiply(a: f64, b: f64) -> f64;
-pub fn divide(a: f64, b: f64) -> Result<f64, String>;
-```
-
-### Memory Operations
-```rust
-pub fn memory_add(value: f64);
-pub fn memory_subtract(value: f64);
-pub fn memory_recall() -> f64;
-pub fn memory_clear();
-```
-
-## Setup
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd rust-wasm-calc
-```
-
-2. Build the WASM module:
-```bash
-wasm-pack build --target web
-```
-
-3. Start the development server:
-```bash
-npm install -g http-server
-http-server . -p 8080
-```
-
-4. Open your browser and navigate to `http://localhost:8080`
-
-## Development
-
-### Project Configuration
-
-The project is configured with:
-- `wasm-bindgen`: For Rust-JavaScript interop
-- `console_error_panic_hook`: For better error handling
-- `wasm-bindgen-test`: For WASM-specific testing
-- Bootstrap 5.3.0: For UI components
-- Bootstrap Icons: For calculator symbols
-
-### Current Features
-
-- Basic WASM setup with Rust
-- Modern Bootstrap UI
-- Dark/Light theme toggle
-- Memory operation buttons
-- Comprehensive test infrastructure
-- Error handling
-- Unicode support
-
-## Building for Production
-
-To build the project for production:
+For optimized production builds, use the `--release` flag.
 
 ```bash
 wasm-pack build --target web --release
 ```
 
-This will generate optimized WASM code in the `pkg` directory.
+This command creates a optimized build in the `pkg/` directory, suitable for deployment.
 
-## Contributing
+## 📝 License
 
-1. Write tests first (TDD approach)
-2. Follow Bootstrap conventions
-3. Maintain square design (use `rounded-0`)
-4. Ensure all tests pass
-5. Submit a pull request
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## License
+## 🙏 Acknowledgments
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- [Rust WASM Book](https://rustwasm.github.io/docs/book/)
+- [Bootstrap Documentation](https://getbootstrap.com/docs/)
+- [wasm-bindgen Guide](https://rustwasm.github.io/docs/wasm-bindgen/)
 
-## Acknowledgments
+## 📊 Project Status
 
-- [Rust and WebAssembly Book](https://rustwasm.github.io/docs/book/)
-- [wasm-bindgen Documentation](https://rustwasm.github.io/docs/wasm-bindgen/)
-- [Bootstrap Documentation](https://getbootstrap.com/docs/5.3/)
-- [Bootstrap Icons](https://icons.getbootstrap.com/) 
+- [x] Basic WASM project setup
+- [x] Modern Bootstrap UI layout
+- [x] Calculator button layout
+- [x] Basic project structure
+- [x] Development environment setup
+- [ ] Calculator operations
+- [ ] Memory functions
+- [ ] Error handling
+
+## 🔗 Links
+
+- [Project Roadmap](local-research/initial-roadmap.md)
+- [Documentation](docs/)
+- [Issue Tracker](../../issues)
+- [Pull Requests](../../pulls)
+
+
+
+
+
+
+
