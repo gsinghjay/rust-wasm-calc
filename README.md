@@ -122,12 +122,32 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Memory functions
 - [ ] Error handling
 
-## 🔗 Links
+## 📚 Documentation Standards
 
-- [Project Roadmap](local-research/initial-roadmap.md)
-- [Documentation](docs/)
-- [Issue Tracker](../../issues)
-- [Pull Requests](../../pulls)
+This project follows the official Rust documentation standards and conventions:
+
+- [Rust Documentation Guide](https://doc.rust-lang.org/rustdoc/how-to-write-documentation.html) - Official guide for writing documentation
+- [RFC 505: Documentation Conventions](https://rust-lang.github.io/rfcs/0505-api-comment-conventions.html) - Standard conventions for API documentation
+- [Rust Style Guide](https://doc.rust-lang.org/nightly/style-guide/) - Official Rust style guidelines
+
+### Documentation Principles
+
+1. Every public API has comprehensive documentation
+2. All documentation includes examples
+3. Comments follow the standard format:
+   ```rust
+   /// Short summary
+   ///
+   /// Detailed explanation
+   ///
+   /// # Examples
+   ///
+   /// ```rust
+   /// // Example code
+   /// ```
+   ```
+4. Module-level documentation uses `//!` comments
+5. Function and type documentation uses `///` comments
 
 
 
