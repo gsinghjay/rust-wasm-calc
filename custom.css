@@ -1,0 +1,27 @@
+/* Custom styles for WASM Calculator */
+
+.calculator-container {
+    max-width: 400px;
+    margin: auto;
+}
+
+/* Remove rounded corners from calculator elements */
+.calculator-container .card,
+.calculator-container .card-header,
+.calculator-container .btn,
+.calculator-container #display {
+    border-radius: 0 !important;
+}
+
+.btn-calc {
+    min-width: 60px;
+    height: 60px;
+}
+
+#display {
+    font-family: 'Roboto Mono', monospace;
+    height: 80px;
+    font-size: 2rem;
+    text-align: right;
+    padding: 1rem;
+} 
