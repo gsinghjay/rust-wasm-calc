@@ -3,7 +3,9 @@ name = "rust-wasm-calc"
 version = "0.1.0"
 edition = "2021"
 description = "A WebAssembly calculator built with Rust"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Jay Singh <gsinghjay@gmail.com>"]
+repository = "https://github.com/gsinghjay/rust-wasm-calc"
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
