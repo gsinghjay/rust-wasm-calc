@@ -28,80 +28,80 @@
                         <div class="row g-2">
                             <!-- Memory Operations -->
                             <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">MC</button>
+                                <button class="btn btn-secondary w-100 btn-calc" data-action="memory">MC</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">MR</button>
+                                <button class="btn btn-secondary w-100 btn-calc" data-action="memory">MR</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">M+</button>
+                                <button class="btn btn-secondary w-100 btn-calc" data-action="memory">M+</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">M-</button>
+                                <button class="btn btn-secondary w-100 btn-calc" data-action="memory">M-</button>
                             </div>
                             
                             <!-- Clear and Operations -->
                             <div class="col-6">
-                                <button class="btn btn-danger w-100 btn-calc">C</button>
+                                <button class="btn btn-danger w-100 btn-calc" data-action="clear">C</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-danger w-100 btn-calc">CE</button>
+                                <button class="btn btn-danger w-100 btn-calc" data-action="clear-entry">CE</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">/</button>
+                                <button class="btn btn-primary w-100 btn-calc" data-action="operator">/</button>
                             </div>
                             
                             <!-- Numbers and Operations -->
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">7</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">7</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">8</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">8</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">9</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">9</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">×</button>
-                            </div>
-                            
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">4</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">5</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">6</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">-</button>
+                                <button class="btn btn-primary w-100 btn-calc" data-action="operator">×</button>
                             </div>
                             
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">1</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">4</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">2</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">5</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">3</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">6</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">+</button>
+                                <button class="btn btn-primary w-100 btn-calc" data-action="operator">-</button>
                             </div>
                             
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">±</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">1</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">0</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">2</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">.</button>
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">3</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">=</button>
+                                <button class="btn btn-primary w-100 btn-calc" data-action="operator">+</button>
+                            </div>
+                            
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc" data-action="negate">±</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc" data-action="number">0</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc" data-action="decimal">.</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-primary w-100 btn-calc" data-action="equals">=</button>
                             </div>
                         </div>
                     </div>
@@ -115,18 +115,170 @@
     
     <!-- WASM Module -->
     <script type="module">
-        import init, { hello } from './pkg/rust_wasm_calc.js';
+        import init, { add, subtract, multiply, divide } from './pkg/rust_wasm_calc.js';
+
+        // Calculator state
+        let currentNumber = '0';
+        let previousNumber = null;
+        let operator = null;
+        let newNumber = true;
+        let memory = 0;
 
         // Initialize WASM
         async function run() {
             await init();
             const display = document.getElementById('display');
+            display.textContent = '0';
+
+            // Add click handlers to all calculator buttons
+            document.querySelectorAll('.btn-calc').forEach(button => {
+                button.addEventListener('click', handleButtonClick);
+            });
+        }
+
+        function handleButtonClick(event) {
+            const button = event.target;
+            const action = button.dataset.action;
+            const value = button.textContent;
+
+            switch (action) {
+                case 'number':
+                    handleNumber(value);
+                    break;
+                case 'operator':
+                    handleOperator(value);
+                    break;
+                case 'equals':
+                    calculateResult();
+                    break;
+                case 'clear':
+                    clearCalculator();
+                    break;
+                case 'clear-entry':
+                    clearEntry();
+                    break;
+                case 'decimal':
+                    handleDecimal();
+                    break;
+                case 'negate':
+                    negateNumber();
+                    break;
+                case 'memory':
+                    handleMemory(value);
+                    break;
+            }
+        }
+
+        function handleNumber(value) {
+            const display = document.getElementById('display');
+            if (newNumber) {
+                display.textContent = value;
+                newNumber = false;
+            } else {
+                display.textContent = display.textContent === '0' ? value : display.textContent + value;
+            }
+            currentNumber = display.textContent;
+        }
+
+        function handleOperator(value) {
+            if (operator !== null) {
+                calculateResult();
+            }
+            previousNumber = parseFloat(currentNumber);
+            operator = value;
+            newNumber = true;
+        }
+
+        async function calculateResult() {
+            if (operator === null || previousNumber === null) return;
+
+            const current = parseFloat(currentNumber);
+            let result;
+
             try {
-                const result = hello("WASM");
-                display.textContent = "Hello, I'm Jay!";
-            } catch (e) {
-                display.textContent = `Error: ${e.message}`;
-                console.error(e);
+                switch (operator) {
+                    case '+':
+                        result = add(previousNumber, current);
+                        break;
+                    case '-':
+                        result = subtract(previousNumber, current);
+                        break;
+                    case '×':
+                        result = multiply(previousNumber, current);
+                        break;
+                    case '/':
+                        result = divide(previousNumber, current);
+                        break;
+                }
+
+                const display = document.getElementById('display');
+                if (isNaN(result)) {
+                    display.textContent = 'Error';
+                } else {
+                    display.textContent = result.toString();
+                    currentNumber = result.toString();
+                }
+            } catch (error) {
+                console.error('Calculation error:', error);
+                document.getElementById('display').textContent = 'Error';
+            }
+
+            operator = null;
+            previousNumber = null;
+            newNumber = true;
+        }
+
+        function clearCalculator() {
+            currentNumber = '0';
+            previousNumber = null;
+            operator = null;
+            newNumber = true;
+            document.getElementById('display').textContent = '0';
+        }
+
+        function clearEntry() {
+            currentNumber = '0';
+            document.getElementById('display').textContent = '0';
+            newNumber = true;
+        }
+
+        function handleDecimal() {
+            const display = document.getElementById('display');
+            if (newNumber) {
+                display.textContent = '0.';
+                newNumber = false;
+            } else if (!display.textContent.includes('.')) {
+                display.textContent += '.';
+            }
+            currentNumber = display.textContent;
+        }
+
+        function negateNumber() {
+            const display = document.getElementById('display');
+            const current = parseFloat(display.textContent);
+            display.textContent = (-current).toString();
+            currentNumber = display.textContent;
+        }
+
+        function handleMemory(action) {
+            const current = parseFloat(document.getElementById('display').textContent);
+            switch (action) {
+                case 'MC':
+                    memory = 0;
+                    break;
+                case 'MR':
+                    document.getElementById('display').textContent = memory.toString();
+                    currentNumber = memory.toString();
+                    newNumber = true;
+                    break;
+                case 'M+':
+                    memory += current;
+                    newNumber = true;
+                    break;
+                case 'M-':
+                    memory -= current;
+                    newNumber = true;
+                    break;
             }
         }
 

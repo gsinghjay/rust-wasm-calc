@@ -25,9 +25,7 @@ use wasm_bindgen::prelude::*;
 
 /// Returns a friendly greeting message.
 ///
-/// This function is currently a placeholder that demonstrates the WebAssembly
-/// binding functionality. It will be replaced with calculator operations
-/// in future versions.
+/// This function demonstrates the WebAssembly binding functionality.
 ///
 /// # Arguments
 ///
@@ -40,10 +38,6 @@ use wasm_bindgen::prelude::*;
 ///
 /// let result = hello("World");
 /// assert_eq!(result, "Hello, World!");
-///
-/// // Works with empty strings
-/// let empty = hello("");
-/// assert_eq!(empty, "Hello, !");
 /// ```
 ///
 /// # Note
@@ -53,6 +47,95 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn hello(name: &str) -> String {
     format!("Hello, {}!", name)
+}
+
+/// Adds two numbers together.
+///
+/// # Arguments
+///
+/// * `a` - First number
+/// * `b` - Second number
+///
+/// # Examples
+///
+/// ```rust
+/// use rust_wasm_calc::add;
+///
+/// let result = add(2.5, 3.7);
+/// assert_eq!(result, 6.2);
+/// ```
+#[wasm_bindgen]
+pub fn add(a: f64, b: f64) -> f64 {
+    a + b
+}
+
+/// Subtracts the second number from the first.
+///
+/// # Arguments
+///
+/// * `a` - Number to subtract from
+/// * `b` - Number to subtract
+///
+/// # Examples
+///
+/// ```rust
+/// use rust_wasm_calc::subtract;
+///
+/// let result = subtract(5.0, 3.0);
+/// assert_eq!(result, 2.0);
+/// ```
+#[wasm_bindgen]
+pub fn subtract(a: f64, b: f64) -> f64 {
+    a - b
+}
+
+/// Multiplies two numbers together.
+///
+/// # Arguments
+///
+/// * `a` - First number
+/// * `b` - Second number
+///
+/// # Examples
+///
+/// ```rust
+/// use rust_wasm_calc::multiply;
+///
+/// let result = multiply(4.0, 2.5);
+/// assert_eq!(result, 10.0);
+/// ```
+#[wasm_bindgen]
+pub fn multiply(a: f64, b: f64) -> f64 {
+    a * b
+}
+
+/// Divides the first number by the second.
+///
+/// Returns NaN if attempting to divide by zero.
+///
+/// # Arguments
+///
+/// * `a` - Dividend
+/// * `b` - Divisor
+///
+/// # Examples
+///
+/// ```rust
+/// use rust_wasm_calc::divide;
+///
+/// let result = divide(10.0, 2.0);
+/// assert_eq!(result, 5.0);
+///
+/// let zero_division = divide(1.0, 0.0);
+/// assert!(zero_division.is_nan());
+/// ```
+#[wasm_bindgen]
+pub fn divide(a: f64, b: f64) -> f64 {
+    if b == 0.0 {
+        std::f64::NAN
+    } else {
+        a / b
+    }
 }
 
 #[cfg(test)]
@@ -91,5 +174,43 @@ mod tests {
         let result = hello(&long_name);
         assert!(result.starts_with("Hello, "));
         assert!(result.ends_with("!"));
+    }
+
+    #[test]
+    fn test_add() {
+        assert_eq!(add(2.0, 3.0), 5.0);
+        assert_eq!(add(-1.0, 1.0), 0.0);
+        assert_eq!(add(0.1, 0.2), 0.3);
+    }
+
+    #[test]
+    fn test_subtract() {
+        assert_eq!(subtract(5.0, 3.0), 2.0);
+        assert_eq!(subtract(1.0, 1.0), 0.0);
+        assert_eq!(subtract(-1.0, -1.0), 0.0);
+    }
+
+    #[test]
+    fn test_multiply() {
+        assert_eq!(multiply(4.0, 2.0), 8.0);
+        assert_eq!(multiply(-2.0, 3.0), -6.0);
+        assert_eq!(multiply(0.0, 5.0), 0.0);
+    }
+
+    #[test]
+    fn test_divide() {
+        assert_eq!(divide(6.0, 2.0), 3.0);
+        assert_eq!(divide(-6.0, 2.0), -3.0);
+        assert!(divide(1.0, 0.0).is_nan());
+    }
+
+    // WASM-specific tests
+    #[wasm_bindgen_test]
+    fn test_calculator_operations_wasm() {
+        assert_eq!(add(2.0, 2.0), 4.0);
+        assert_eq!(subtract(5.0, 3.0), 2.0);
+        assert_eq!(multiply(3.0, 4.0), 12.0);
+        assert_eq!(divide(10.0, 2.0), 5.0);
+        assert!(divide(1.0, 0.0).is_nan());
     }
 }
