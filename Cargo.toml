@@ -1,0 +1,22 @@
+[package]
+name = "rust-wasm-calc"
+version = "0.1.0"
+edition = "2021"
+description = "A WebAssembly calculator built with Rust"
+authors = ["Your Name <your.email@example.com>"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+console_error_panic_hook = { version = "0.1", optional = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+futures = "0.3"
+js-sys = "0.3"
+wasm-bindgen-futures = "0.4"
+
+[features]
+default = ["console_error_panic_hook"]
