@@ -12,6 +12,7 @@ rust-wasm-calc/
 ├── tests/
 │   └── web.rs         # Integration tests for browser environment
 ├── pkg/               # Generated WASM package (after build)
+├── custom.css         # Custom styles for the calculator
 └── index.html         # Web interface with Bootstrap 5
 ```
 
@@ -61,16 +62,35 @@ The calculator uses Bootstrap 5.3.0 for its user interface with the following fe
 - Bootstrap's utility classes for spacing and alignment
 
 ### Custom Styling
-Only minimal custom CSS is used to extend Bootstrap:
+Custom styles are maintained in `custom.css` and extend Bootstrap's functionality:
 ```css
+/* Calculator container */
+.calculator-container {
+    max-width: 400px;
+    margin: auto;
+}
+
+/* Square design for all calculator elements */
+.calculator-container .card,
+.calculator-container .card-header,
+.calculator-container .btn,
+.calculator-container #display {
+    border-radius: 0 !important;
+}
+
+/* Calculator buttons */
 .btn-calc {
     min-width: 60px;
     height: 60px;
 }
+
+/* Calculator display */
 #display {
     font-family: 'Roboto Mono', monospace;
     height: 80px;
     font-size: 2rem;
+    text-align: right;
+    padding: 1rem;
 }
 ```
 
