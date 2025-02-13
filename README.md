@@ -1,10 +1,15 @@
 # Rust WASM Calculator
 
+[![Rust](https://img.shields.io/badge/rust-stable-brightgreen.svg)](https://www.rust-lang.org/)
+[![wasm-pack](https://img.shields.io/badge/wasm--pack-latest-blue.svg)](https://rustwasm.github.io/wasm-pack/)
+[![Bootstrap](https://img.shields.io/badge/bootstrap-5.3.0-purple.svg)](https://getbootstrap.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Overview
 
 Rust WASM Calculator is a WebAssembly calculator application. It is built using Rust and Bootstrap 5. The project follows test-driven development practices.
 
-## Quick Start
+## 🚀 Quick Start
 
 1. **Prerequisites:** Ensure you have Rust, wasm-pack, and Node.js installed.
 2. **Clone Repository:** Clone the repository to your local machine.
@@ -23,7 +28,7 @@ Rust WASM Calculator is a WebAssembly calculator application. It is built using 
    ```
 5. **Access in Browser:** Open your browser and go to `http://localhost:8080`.
 
-## Core Package: `rust-wasm-calc`
+## 📦 Core Package: `rust-wasm-calc`
 
 ### Installation
 
@@ -52,7 +57,7 @@ async function run() {
 run();
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 ### Dependencies
 
@@ -68,7 +73,7 @@ run();
 
 - `default`: Enables the `console_error_panic_hook` feature. This is recommended for better debugging in browser environments.
 
-## Advanced Usage
+## 🧪 Advanced Usage
 
 ### Running Tests
 
@@ -95,6 +100,34 @@ wasm-pack build --target web --release
 ```
 
 This command creates a optimized build in the `pkg/` directory, suitable for deployment.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Rust WASM Book](https://rustwasm.github.io/docs/book/)
+- [Bootstrap Documentation](https://getbootstrap.com/docs/)
+- [wasm-bindgen Guide](https://rustwasm.github.io/docs/wasm-bindgen/)
+
+## 📊 Project Status
+
+- [x] Basic WASM project setup
+- [x] Modern Bootstrap UI layout
+- [x] Calculator button layout
+- [x] Basic project structure
+- [x] Development environment setup
+- [ ] Calculator operations
+- [ ] Memory functions
+- [ ] Error handling
+
+## 🔗 Links
+
+- [Project Roadmap](local-research/initial-roadmap.md)
+- [Documentation](docs/)
+- [Issue Tracker](../../issues)
+- [Pull Requests](../../pulls)
 
 
 
