@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Rust WASM Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        #output {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rust WASM Calculator</h1>
+        <div id="output">Loading WASM module...</div>
+    </div>
+    <script type="module">
+        import init, { hello } from './pkg/rust_wasm_calc.js';
+
+        async function run() {
+            await init();
+            const output = document.getElementById('output');
+            try {
+                const result = hello("WASM");
+                output.textContent = result;
+            } catch (e) {
+                output.textContent = `Error: ${e.message}`;
+                console.error(e);
+            }
+        }
+
+        run();
+    </script>
+</body>
+</html> 
