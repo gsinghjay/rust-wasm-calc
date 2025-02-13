@@ -6,7 +6,7 @@ A WebAssembly calculator built with Rust and Bootstrap 5, following test-driven 
 
 ```
 rust-wasm-calc/
-├── Cargo.toml          # Rust package configuration
+├── Cargo.toml         # Rust package configuration
 ├── src/
 │   └── lib.rs         # Rust library code with WASM bindings
 ├── tests/
@@ -26,17 +26,20 @@ Before you begin, ensure you have the following installed:
 
 ## Development Roadmap
 
-### Phase 1: Basic Operations
+### Phase 0: Basic Functionality
 - [x] Project setup and configuration
 - [x] WASM binding implementation
 - [x] Bootstrap UI implementation
 - [x] Testing infrastructure
+
+### Phase 1: Basic Operations
 - [ ] Addition operation
 - [ ] Subtraction operation
 - [ ] Multiplication operation
 - [ ] Division operation
 
 ### Phase 2: Advanced Features
+
 - [ ] Memory functions (M+, M-, MR, MC)
 - [ ] History of calculations
 - [ ] Scientific calculator functions
@@ -94,34 +97,36 @@ Custom styles are maintained in `custom.css` and extend Bootstrap's functionalit
 
 ## Testing
 
-The project uses a comprehensive testing approach with multiple test types and environments.
+The project uses a test-driven development approach with multiple test types and environments.
 
 ### Test Types
 
 1. **Unit Tests**
    ```rust
+   // Example test structure (to be implemented)
    #[test]
-   fn test_hello_rust() {
-       let result = hello("Rust");
-       assert_eq!(result, "Hello, Rust!");
+   fn test_add() {
+       let result = add(2.0, 3.0);
+       assert_eq!(result, 5.0);
    }
    ```
 
 2. **WASM Browser Tests**
    ```rust
+   // Example test structure (to be implemented)
    #[wasm_bindgen_test]
-   fn test_hello_wasm_browser() {
-       let result = hello("WASM");
-       assert_eq!(result, "Hello, WASM!");
+   fn test_add_in_browser() {
+       let result = add(2.0, 3.0);
+       assert_eq!(result, 5.0);
    }
    ```
 
 3. **Integration Tests** (in `tests/web.rs`)
    ```rust
+   // Example test structure (to be implemented)
    #[wasm_bindgen_test]
-   fn test_hello_unicode() {
-       let result = hello("🌍");
-       assert_eq!(result, "Hello, 🌍!");
+   fn test_calculator_display() {
+       // Test calculator display updates
    }
    ```
 
@@ -143,90 +148,110 @@ wasm-pack test --firefox --headless
 
 ## Calculator Functionality
 
-The calculator implements the following features:
+The calculator will implement the following features (currently in development):
 
-### Basic Operations
+### Planned Basic Operations
 ```rust
+// To be implemented
 pub fn add(a: f64, b: f64) -> f64;
 pub fn subtract(a: f64, b: f64) -> f64;
 pub fn multiply(a: f64, b: f64) -> f64;
 pub fn divide(a: f64, b: f64) -> Result<f64, String>;
 ```
 
-### Memory Operations
+### Planned Memory Operations
 ```rust
+// To be implemented
 pub fn memory_add(value: f64);
 pub fn memory_subtract(value: f64);
 pub fn memory_recall() -> f64;
 pub fn memory_clear();
 ```
 
+### Current Features
+- [x] Basic WASM project setup
+- [x] Modern Bootstrap UI layout
+- [x] Calculator button layout
+- [x] Basic project structure
+- [x] Development environment setup
+- [ ] Calculator operations
+- [ ] Memory functions
+- [ ] Error handling
+
 ## Setup
 
-1. Clone the repository:
+1. **Clone and Enter the Repository:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/your-username/rust-wasm-calc.git
 cd rust-wasm-calc
 ```
 
-2. Build the WASM module:
+2. **Install Prerequisites:**
 ```bash
-wasm-pack build --target web
-```
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-3. Start the development server:
-```bash
+# Add WASM target
+rustup target add wasm32-unknown-unknown
+
+# Install wasm-pack
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+# Install http-server (for development)
 npm install -g http-server
-http-server . -p 8080
 ```
 
-4. Open your browser and navigate to `http://localhost:8080`
+3. **Build the Project:**
+```bash
+# Build WASM module
+wasm-pack build --target web
+
+# The output will be in the pkg/ directory
+```
+
+4. **Run Development Server:**
+```bash
+# Start the server
+http-server . -p 8080
+
+# Open http://localhost:8080 in your browser
+```
+
+5. **Run Tests:**
+```bash
+# Run Rust unit tests
+cargo test
+
+# Run WASM tests in headless Chrome
+wasm-pack test --headless --chrome
+```
 
 ## Development
 
 ### Project Configuration
 
-The project is configured with:
-- `wasm-bindgen`: For Rust-JavaScript interop
-- `console_error_panic_hook`: For better error handling
-- `wasm-bindgen-test`: For WASM-specific testing
+The project uses the following key dependencies:
+- `wasm-bindgen`: For Rust and JavaScript interop
+- `console_error_panic_hook`: For better error handling in browser
+- `wasm-bindgen-test`: For testing WASM code
 - Bootstrap 5.3.0: For UI components
 - Bootstrap Icons: For calculator symbols
 
-### Current Features
+### Development Workflow
 
-- Basic WASM setup with Rust
-- Modern Bootstrap UI
-- Memory operation buttons
-- Comprehensive test infrastructure
-- Error handling
-- Unicode support
+1. Write tests first (following TDD)
+2. Implement the feature in Rust
+3. Build WASM module
+4. Test in browser
+5. Commit changes
 
-## Building for Production
+### Building for Production
 
-To build the project for production:
+For production builds:
 
 ```bash
+# Build with optimizations
 wasm-pack build --target web --release
+
+# The optimized output will be in the pkg/ directory
 ```
-
-This will generate optimized WASM code in the `pkg` directory.
-
-## Contributing
-
-1. Write tests first (TDD approach)
-2. Follow Bootstrap conventions
-3. Maintain square design (use `rounded-0`)
-4. Ensure all tests pass
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- [Rust and WebAssembly Book](https://rustwasm.github.io/docs/book/)
-- [wasm-bindgen Documentation](https://rustwasm.github.io/docs/wasm-bindgen/)
-- [Bootstrap Documentation](https://getbootstrap.com/docs/5.3/)
-- [Bootstrap Icons](https://icons.getbootstrap.com/) 
