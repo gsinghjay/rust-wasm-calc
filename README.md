@@ -31,7 +31,6 @@ Before you begin, ensure you have the following installed:
 - [x] WASM binding implementation
 - [x] Bootstrap UI implementation
 - [x] Testing infrastructure
-- [x] Dark/Light theme support
 - [ ] Addition operation
 - [ ] Subtraction operation
 - [ ] Multiplication operation
@@ -55,9 +54,8 @@ Before you begin, ensure you have the following installed:
 The calculator uses Bootstrap 5.3.0 for its user interface with the following features:
 
 ### Components
-- Square design using `rounded-0` class
+- Square design using CSS
 - Bootstrap Icons for symbols
-- Bootstrap's theme system for dark/light modes
 - Bootstrap's grid system for button layout
 - Bootstrap's utility classes for spacing and alignment
 
@@ -93,12 +91,6 @@ Custom styles are maintained in `custom.css` and extend Bootstrap's functionalit
     padding: 1rem;
 }
 ```
-
-### Theme Support
-- Light/Dark mode toggle
-- System-wide theme consistency
-- Bootstrap's `data-bs-theme` attribute
-- Automatic theme switching
 
 ## Testing
 
@@ -205,7 +197,6 @@ The project is configured with:
 
 - Basic WASM setup with Rust
 - Modern Bootstrap UI
-- Dark/Light theme toggle
 - Memory operation buttons
 - Comprehensive test infrastructure
 - Error handling

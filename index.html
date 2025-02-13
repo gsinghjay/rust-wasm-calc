@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,11 +18,6 @@
                 <div class="card-header bg-dark text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">WASM Calculator</h5>
-                        <div>
-                            <button class="btn btn-outline-light btn-sm" id="theme-toggle">
-                                <i class="bi bi-sun-fill"></i>
-                            </button>
-                        </div>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -121,17 +116,6 @@
     <!-- WASM Module -->
     <script type="module">
         import init, { hello } from './pkg/rust_wasm_calc.js';
-
-        // Theme toggling
-        const themeToggle = document.getElementById('theme-toggle');
-        const toggleIcon = themeToggle.querySelector('i');
-        
-        themeToggle.addEventListener('click', () => {
-            const html = document.documentElement;
-            const isDark = html.getAttribute('data-bs-theme') === 'dark';
-            html.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
-            toggleIcon.className = isDark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
-        });
 
         // Initialize WASM
         async function run() {
