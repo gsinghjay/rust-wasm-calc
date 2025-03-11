@@ -106,6 +106,9 @@
                         </div>
                     </div>
                 </div>
+                <div class="card-footer bg-light text-center text-muted">
+                    <small>Press <kbd>Esc</kbd> to clear, <kbd>Enter</kbd> to calculate</small>
+                </div>
             </div>
         </div>
     </div>
@@ -115,16 +118,37 @@
     
     <!-- WASM Module -->
     <script type="module">
-        import init, { hello } from './pkg/rust_wasm_calc.js';
+        import init, { 
+            memory_store, 
+            memory_recall, 
+            memory_clear, 
+            memory_add, 
+            memory_subtract 
+        } from './pkg/rust_wasm_calc.js';
+        import { initCalculator } from './js/calculator.js';
 
         // Initialize WASM
         async function run() {
-            await init();
-            const display = document.getElementById('display');
             try {
-                const result = hello("WASM");
-                display.textContent = "Hello, I'm Jay!";
+                const wasmModule = await init();
+                
+                // Create an object with the calculator functions
+                const calculatorFunctions = {
+                    memory_store,
+                    memory_recall,
+                    memory_clear,
+                    memory_add,
+                    memory_subtract
+                };
+                
+                // Initialize the calculator UI
+                initCalculator(calculatorFunctions);
+                
+                // Update the display to show it's ready
+                const display = document.getElementById('display');
+                display.textContent = "0";
             } catch (e) {
+                const display = document.getElementById('display');
                 display.textContent = `Error: ${e.message}`;
                 console.error(e);
             }
