@@ -43,15 +43,85 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `name`:  The name to include in the greeting.
 - **Returns:**  A string formatted as "Hello, {name}!".
 
+#### `add(a: f64, b: f64) -> f64`
+
+- **Description:** Adds two numbers and returns the result.
+- **Parameters:**
+    - `a`: First operand
+    - `b`: Second operand
+- **Returns:** The sum of `a` and `b`
+
+#### `subtract(a: f64, b: f64) -> f64`
+
+- **Description:** Subtracts the second number from the first and returns the result.
+- **Parameters:**
+    - `a`: First operand
+    - `b`: Second operand
+- **Returns:** The difference `a - b`
+
+#### `multiply(a: f64, b: f64) -> f64`
+
+- **Description:** Multiplies two numbers and returns the result.
+- **Parameters:**
+    - `a`: First operand
+    - `b`: Second operand
+- **Returns:** The product of `a` and `b`
+
+#### `divide(a: f64, b: f64) -> Result<f64, String>`
+
+- **Description:** Divides the first number by the second and returns the result.
+- **Parameters:**
+    - `a`: Dividend (numerator)
+    - `b`: Divisor (denominator)
+- **Returns:** 
+    - `Ok(result)`: The quotient `a / b` if successful
+    - `Err(message)`: An error message if division by zero is attempted
+
+#### Memory Functions
+
+- **`memory_store(value: f64)`**: Stores a value in the calculator's memory
+- **`memory_recall() -> f64`**: Recalls the current value stored in memory
+- **`memory_clear()`**: Clears the calculator's memory by setting it to zero
+- **`memory_add(value: f64)`**: Adds a value to the current value stored in memory
+- **`memory_subtract(value: f64)`**: Subtracts a value from the current value stored in memory
+
 **Example Usage (JavaScript):**
 
 ```javascript
-import init, { hello } from './pkg/rust_wasm_calc.js';
+import init, { hello, add, subtract, multiply, divide, memory_store, memory_recall } from './pkg/rust_wasm_calc.js';
 
 async function run() {
   await init();
+  
+  // Basic greeting
   const message = hello("User");
   console.log(message); // Output: Hello, User!
+  
+  // Calculator operations
+  console.log(add(2, 3)); // Output: 5
+  console.log(subtract(5, 3)); // Output: 2
+  console.log(multiply(2, 3)); // Output: 6
+  
+  // Division with error handling
+  try {
+    const result = divide(6, 3);
+    if (result.err) {
+      console.error(result.err);
+    } else {
+      console.log(result.ok); // Output: 2
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  
+  // Memory operations
+  memory_store(10);
+  memory_add(5);
+  console.log(memory_recall()); // Output: 15
+  memory_subtract(3);
+  console.log(memory_recall()); // Output: 12
+  memory_clear();
+  console.log(memory_recall()); // Output: 0
 }
 
 run();
@@ -118,9 +188,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Calculator button layout
 - [x] Basic project structure
 - [x] Development environment setup
-- [ ] Calculator operations
-- [ ] Memory functions
-- [ ] Error handling
+- [x] Calculator operations
+- [x] Memory functions
+- [x] Error handling
+- [ ] UI Interaction & State Management
+- [ ] LLM Chatbot Integration
+- [ ] Advanced Features & Refinement
 
 ## 📚 Documentation Standards
 
