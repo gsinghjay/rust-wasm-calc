@@ -7,8 +7,9 @@
 //! # Features
 //!
 //! - WebAssembly integration using wasm-bindgen
-//! - Basic arithmetic operations (coming soon)
-//! - Memory functions (planned)
+//! - Basic arithmetic operations
+//! - Memory functions
+//! - State management for calculator operations
 //! - Error handling with proper JavaScript integration
 //!
 //! # Examples
@@ -22,6 +23,9 @@
 //! ```
 
 use wasm_bindgen::prelude::*;
+
+// Include the state module
+pub mod state;
 
 /// Returns a friendly greeting message.
 ///
