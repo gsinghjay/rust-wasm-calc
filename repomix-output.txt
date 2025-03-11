@@ -1,0 +1,3970 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+
+Additional Info:
+----------------
+
+================================================================
+Directory Structure
+================================================================
+.github/
+  workflows/
+    semantic-release.yml
+js/
+  calculator.js
+lessons/
+  enhanced-tutorial-series.md
+  tutorial-series.md
+local-research/
+  rust-wasm-best-practices.md
+  rust-wasm-tdd.md
+  rust-wasm-testing.md
+src/
+  lib.rs
+  state.rs
+tests/
+  web.rs
+.gitignore
+.repomixignore
+Cargo.toml
+CHANGELOG.md
+custom.css
+index.html
+LICENSE
+README.md
+repomix.config.json
+TASKS.md
+
+================================================================
+Files
+================================================================
+
+================
+File: .github/workflows/semantic-release.yml
+================
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    concurrency: release
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Python Semantic Release
+      uses: python-semantic-release/python-semantic-release@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
+================
+File: js/calculator.js
+================
+/**
+ * Calculator UI interaction module
+ * 
+ * This module handles the interaction between the UI and the WASM calculator.
+ * It connects button clicks to WASM functions and updates the display.
+ */
+
+import { CalculatorState, Operation } from '../pkg/rust_wasm_calc.js';
+
+/**
+ * Calculator controller class
+ * 
+ * Manages the interaction between the UI and the WASM calculator state.
+ */
+export class CalculatorController {
+  /**
+   * Creates a new calculator controller
+   * 
+   * @param {HTMLElement} displayElement - The element to display calculator output
+   */
+  constructor(displayElement) {
+    this.displayElement = displayElement;
+    this.state = new CalculatorState();
+    this.updateDisplay();
+  }
+
+  /**
+   * Updates the display with the current calculator state
+   */
+  updateDisplay() {
+    this.displayElement.textContent = this.state.display_value;
+  }
+
+  /**
+   * Handles digit button clicks
+   * 
+   * @param {number} digit - The digit that was clicked (0-9)
+   */
+  handleDigit(digit) {
+    this.state.input_digit(digit);
+    this.updateDisplay();
+  }
+
+  /**
+   * Handles decimal point button click
+   */
+  handleDecimal() {
+    this.state.input_decimal();
+    this.updateDisplay();
+  }
+
+  /**
+   * Handles operation button clicks
+   * 
+   * @param {string} op - The operation symbol (+, -, ×, /)
+   */
+  handleOperation(op) {
+    let operation;
+    switch (op) {
+      case '+':
+        operation = Operation.Add;
+        break;
+      case '-':
+        operation = Operation.Subtract;
+        break;
+      case '×':
+        operation = Operation.Multiply;
+        break;
+      case '/':
+        operation = Operation.Divide;
+        break;
+      default:
+        return;
+    }
+    
+    this.state.set_operation(operation);
+    this.updateDisplay();
+  }
+
+  /**
+   * Handles equals button click
+   */
+  handleEquals() {
+    this.state.calculate();
+    this.updateDisplay();
+  }
+
+  /**
+   * Handles clear button click
+   */
+  handleClear() {
+    this.state.clear();
+    this.updateDisplay();
+  }
+
+  /**
+   * Handles clear entry button click
+   */
+  handleClearEntry() {
+    this.state.clear_entry();
+    this.updateDisplay();
+  }
+
+  /**
+   * Handles toggle sign button click
+   */
+  handleToggleSign() {
+    this.state.toggle_sign();
+    this.updateDisplay();
+  }
+
+  /**
+   * Handles backspace button click
+   */
+  handleBackspace() {
+    this.state.backspace();
+    this.updateDisplay();
+  }
+
+  /**
+   * Handles memory store button click
+   */
+  handleMemoryStore() {
+    const value = parseFloat(this.state.display_value);
+    if (!isNaN(value)) {
+      window.memory_store(value);
+    }
+  }
+
+  /**
+   * Handles memory recall button click
+   */
+  handleMemoryRecall() {
+    this.state.clear();
+    const value = window.memory_recall();
+    // Format the value to avoid unnecessary decimal places
+    if (value === Math.floor(value)) {
+      this.displayElement.textContent = Math.floor(value).toString();
+    } else {
+      this.displayElement.textContent = value.toString();
+    }
+  }
+
+  /**
+   * Handles memory add button click
+   */
+  handleMemoryAdd() {
+    const value = parseFloat(this.state.display_value);
+    if (!isNaN(value)) {
+      window.memory_add(value);
+    }
+  }
+
+  /**
+   * Handles memory subtract button click
+   */
+  handleMemorySubtract() {
+    const value = parseFloat(this.state.display_value);
+    if (!isNaN(value)) {
+      window.memory_subtract(value);
+    }
+  }
+
+  /**
+   * Handles memory clear button click
+   */
+  handleMemoryClear() {
+    window.memory_clear();
+  }
+
+  /**
+   * Handles keyboard input
+   * 
+   * @param {KeyboardEvent} event - The keyboard event
+   * @returns {boolean} - Whether the key was handled
+   */
+  handleKeyDown(event) {
+    // Prevent default behavior for calculator keys
+    let handled = true;
+
+    switch (event.key) {
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        this.handleDigit(parseInt(event.key, 10));
+        break;
+      case '.':
+        this.handleDecimal();
+        break;
+      case '+':
+        this.handleOperation('+');
+        break;
+      case '-':
+        this.handleOperation('-');
+        break;
+      case '*':
+      case 'x':
+      case '×':
+        this.handleOperation('×');
+        break;
+      case '/':
+        this.handleOperation('/');
+        break;
+      case '=':
+      case 'Enter':
+        this.handleEquals();
+        break;
+      case 'Escape':
+        this.handleClear();
+        break;
+      case 'Delete':
+        this.handleClearEntry();
+        break;
+      case 'Backspace':
+        this.handleBackspace();
+        break;
+      default:
+        handled = false;
+    }
+
+    if (handled) {
+      event.preventDefault();
+    }
+
+    return handled;
+  }
+}
+
+/**
+ * Initializes the calculator UI
+ * 
+ * @param {Object} wasmModule - The WASM module containing calculator functions
+ */
+export function initCalculator(wasmModule) {
+  const display = document.getElementById('display');
+  const calculator = new CalculatorController(display);
+
+  // Expose memory functions globally for the controller to use
+  window.memory_store = wasmModule.memory_store;
+  window.memory_recall = wasmModule.memory_recall;
+  window.memory_clear = wasmModule.memory_clear;
+  window.memory_add = wasmModule.memory_add;
+  window.memory_subtract = wasmModule.memory_subtract;
+
+  // Set up button click handlers
+  document.querySelectorAll('.btn-calc').forEach(button => {
+    button.addEventListener('click', () => {
+      const text = button.textContent;
+      
+      // Handle different button types
+      if (text.match(/[0-9]/)) {
+        calculator.handleDigit(parseInt(text, 10));
+      } else if (text === '.') {
+        calculator.handleDecimal();
+      } else if (text === '+' || text === '-' || text === '×' || text === '/') {
+        calculator.handleOperation(text);
+      } else if (text === '=') {
+        calculator.handleEquals();
+      } else if (text === 'C') {
+        calculator.handleClear();
+      } else if (text === 'CE') {
+        calculator.handleClearEntry();
+      } else if (text === '±') {
+        calculator.handleToggleSign();
+      } else if (text === 'MC') {
+        calculator.handleMemoryClear();
+      } else if (text === 'MR') {
+        calculator.handleMemoryRecall();
+      } else if (text === 'M+') {
+        calculator.handleMemoryAdd();
+      } else if (text === 'M-') {
+        calculator.handleMemorySubtract();
+      }
+    });
+  });
+
+  // Set up keyboard event handling
+  document.addEventListener('keydown', (event) => {
+    calculator.handleKeyDown(event);
+  });
+
+  // Add a backspace button
+  const backspaceButton = document.createElement('button');
+  backspaceButton.className = 'btn btn-secondary w-100 btn-calc';
+  backspaceButton.innerHTML = '<i class="bi bi-backspace"></i>';
+  backspaceButton.addEventListener('click', () => {
+    calculator.handleBackspace();
+  });
+
+  // Find a good place to add the backspace button
+  const clearEntryButton = Array.from(document.querySelectorAll('.btn-calc')).find(btn => btn.textContent === 'CE');
+  if (clearEntryButton && clearEntryButton.parentNode) {
+    const backspaceCol = document.createElement('div');
+    backspaceCol.className = 'col-3';
+    backspaceCol.appendChild(backspaceButton);
+    
+    // Insert after CE button
+    clearEntryButton.parentNode.parentNode.insertBefore(backspaceCol, clearEntryButton.parentNode.nextSibling);
+  }
+
+  return calculator;
+}
+
+================
+File: lessons/enhanced-tutorial-series.md
+================
+Packing repository using repomix...
+Querying Gemini AI using gemini-2.0-flash-thinking-exp-01-21...
+
+# Building a Rust WebAssembly Calculator: A Visual Guide
+
+## Application Architecture Overview
+
+```mermaid
+graph TB
+    subgraph Browser
+        UI[HTML/CSS UI]
+        JS[JavaScript Logic]
+        WASM[WebAssembly Module]
+    end
+    
+    subgraph Rust Code
+        RC[Rust Calculator Logic]
+        Tests[Unit Tests]
+    end
+    
+    RC -->|Compile| WASM
+    WASM -->|Expose Functions| JS
+    JS -->|Update| UI
+    UI -->|Events| JS
+    JS -->|Call Functions| WASM
+    Tests -->|Verify| RC
+```
+
+### Implementation Status:
+✅ **Implemented:**
+- Basic HTML/CSS UI structure (`index.html`, `custom.css`)
+- Initial WebAssembly Module setup with wasm-bindgen
+- Basic Rust module structure with documentation
+- Comprehensive test infrastructure
+- Browser-based test runner configuration
+- Unicode and special character handling
+- Concurrent execution testing
+- Documentation with examples
+
+❌ **Not Implemented:**
+- Calculator operations (add, subtract, multiply, divide)
+- Memory functions (MC, MR, M+, M-)
+- Event handling for calculator buttons
+- State management for calculations
+- Error handling for invalid operations
+- Display updates and formatting
+- Keyboard input support
+
+## Data Flow Between Components
+
+```mermaid
+sequenceDiagram
+    participant UI as Calculator UI
+    participant JS as JavaScript
+    participant WASM as WebAssembly
+    participant Rust as Rust Functions
+    
+    UI->>JS: Button Click Event
+    JS->>JS: Parse Input
+    JS->>WASM: Call Operation
+    WASM->>Rust: Execute Calculation
+    Rust->>WASM: Return Result
+    WASM->>JS: Return Value
+    JS->>UI: Update Display
+```
+
+### Implementation Status:
+✅ **Implemented:**
+- Button click event handling
+- Input parsing in JavaScript
+- WASM function calls for operations
+- Rust calculation execution
+- Result display updates
+- Complete data flow chain from UI to Rust and back
+
+❌ **Not Implemented:**
+- Keyboard event handling
+- Advanced input validation
+- Comprehensive error state propagation
+
+## Calculator State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initial
+    Initial --> InputFirst: Number Input
+    InputFirst --> Operation: Operator
+    Operation --> InputSecond: Number Input
+    InputSecond --> Result: Equals
+    Result --> Operation: Operator
+    Result --> [*]: Clear
+
+    note right of Initial
+        Display shows "0"
+    end note
+
+    note right of InputFirst
+        Entering first number
+    end note
+
+    note right of Operation
+        Operator selected,
+        storing first number
+    end note
+
+    note right of InputSecond
+        Entering second number
+    end note
+
+    note right of Result
+        Shows calculation result
+    end note
+
+    %% Apply styles to states
+    class Initial,InputFirst,Operation,InputSecond,Result baseState
+    classDef baseState fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+### Implementation Status:
+✅ **Implemented:**
+- Basic state transitions through variables
+- Number input handling
+- Operator selection
+- Result calculation
+- Clear functionality
+
+❌ **Not Implemented:**
+- Explicit state machine structure
+- State transition validation
+- State history tracking
+- Advanced state error handling
+
+## Component Hierarchy
+
+```mermaid
+graph TD
+    A[Calculator App] --> B[Display]
+    A --> C[Button Grid]
+    C --> D[Memory Buttons]
+    C --> E[Clear Buttons]
+    C --> F[Number Buttons]
+    C --> G[Operation Buttons]
+    
+    B --> B1[Display Value]
+    D --> D1[MC]
+    D --> D2[MR]
+    D --> D3["M+"]
+    D --> D4["M-"]
+    
+    E --> E1[C]
+    E --> E2[CE]
+    
+    F --> F1["0-9"]
+    F --> F2["."]
+    F --> F3["±"]
+    
+    G --> G1["+"]
+    G --> G2["-"]
+    G --> G3["×"]
+    G --> G4["/"]
+    G --> G5["="]
+
+    style A fill:#f9f,stroke:#333
+    style B fill:#fdd,stroke:#333
+    style C fill:#dfd,stroke:#333
+    style D,E,F,G fill:#ddf,stroke:#333
+```
+
+### Implementation Status:
+✅ **Implemented:**
+- Calculator app container
+- Display component
+- Button grid layout
+- All button types (Memory, Clear, Number, Operation)
+- Basic button styling and organization
+
+❌ **Not Implemented:**
+- Component-based architecture
+- Reusable UI components
+- Dynamic component updates
+- Component state isolation
+
+## Event Flow
+
+```mermaid
+flowchart TD
+    A[Button Click] --> B{Button Type?}
+    B -->|Number| C[Handle Number]
+    B -->|Operator| D[Handle Operator]
+    B -->|Equals| E[Calculate Result]
+    B -->|Clear| F[Clear Calculator]
+    B -->|Memory| G[Handle Memory]
+    
+    C --> H[Update Display]
+    D --> I[Store Previous Number]
+    D --> J[Set Operator]
+    E --> K[Call Rust Function]
+    K --> L[Process Result]
+    L --> H
+    F --> M[Reset State]
+    M --> H
+    G --> N[Update Memory]
+    N --> H
+```
+
+### Implementation Status:
+✅ **Implemented:**
+- Button click handling
+- Number input processing
+- Operator handling
+- Basic calculation flow
+- Clear functionality
+- Display updates
+- Basic memory operations
+
+❌ **Not Implemented:**
+- Advanced memory state management
+- Operation history
+- Undo/Redo functionality
+- Complex calculation chaining
+- Comprehensive error recovery
+
+## Lesson 1: Project Setup
+
+### Project Structure
+```mermaid
+graph TD
+    A[rust-wasm-calc/] --> B[src/]
+    A --> C[tests/]
+    A --> D[pkg/]
+    A --> E[index.html]
+    A --> F[custom.css]
+    A --> G[Cargo.toml]
+    
+    B --> B1[lib.rs]
+    C --> C1[web.rs]
+    D --> D1[rust_wasm_calc.js]
+    D --> D2[rust_wasm_calc_bg.wasm]
+```
+
+[Rest of Lesson 1 content...]
+
+## Lesson 2: Core Calculator Logic
+
+### Function Implementation Flow
+```mermaid
+graph LR
+    A[Input] --> B[Validation]
+    B --> C[Calculation]
+    C --> D[Error Handling]
+    D --> E[Result]
+    
+    subgraph Rust Functions
+        B
+        C
+        D
+    end
+```
+
+[Rest of Lesson 2 content...]
+
+## Lesson 3: WebAssembly Integration
+
+### WASM Binding Process
+```mermaid
+sequenceDiagram
+    participant R as Rust Code
+    participant W as wasm-bindgen
+    participant J as JavaScript
+    
+    R->>W: Add #[wasm_bindgen]
+    W->>W: Generate Bindings
+    W->>J: Create JS Wrapper
+    J->>W: Import Functions
+    W->>R: Call Rust Code
+```
+
+### Implementation Status:
+✅ **Implemented:**
+- Basic WebAssembly function exposure
+- String handling between Rust and JavaScript
+- Test infrastructure for browser environment
+- Documentation for public functions
+- Error type definitions
+- Unicode support in function parameters
+
+❌ **Not Implemented:**
+- Core calculator operations
+- Input validation
+- Complex calculation logic
+- Error state handling
+- Memory operations
+- Operation chaining
+
+## Lesson 4: User Interface Implementation
+
+### UI Event Handling
+```mermaid
+flowchart LR
+    A[User Input] --> B{Event Type}
+    B -->|Click| C[Button Handler]
+    B -->|Keyboard| D[Keyboard Handler]
+    
+    C --> E{Action Type}
+    D --> E
+    
+    E -->|Number| F[Handle Number]
+    E -->|Operator| G[Handle Operator]
+    E -->|Memory| H[Handle Memory]
+    E -->|Clear| I[Handle Clear]
+```
+
+### Implementation Status:
+✅ **Implemented:**
+- Basic HTML structure
+- CSS styling foundation
+- Initial UI layout
+- WebAssembly loading setup
+
+❌ **Not Implemented:**
+- Button event handlers
+- Display updates
+- Calculator state management
+- Memory operation UI
+- Error message display
+- Keyboard event handling
+
+## Lesson 5: Memory Operations
+
+### Memory State Management
+```mermaid
+stateDiagram-v2
+    [*] --> Empty
+    Empty --> HasValue: M+/M-
+    HasValue --> Empty: MC
+    HasValue --> Display: MR
+    HasValue --> HasValue: M+/M-
+    Display --> HasValue: M+/M-
+```
+
+[Rest of Lesson 5 content...]
+
+## Lesson 6: Error Handling
+
+### Error Flow
+```mermaid
+flowchart TD
+    A[Operation] --> B{Valid?}
+    B -->|Yes| C[Calculate]
+    B -->|No| D[Error]
+    C --> E{Success?}
+    E -->|Yes| F[Display Result]
+    E -->|No| D
+    D --> G[Show Error Message]
+```
+
+[Rest of Lesson 6 content...]
+
+## Lesson 7: Testing Strategy
+
+### Test Coverage
+```mermaid
+graph TD
+    A[Tests] --> B[Unit Tests]
+    A --> C[Integration Tests]
+    A --> D[WASM Tests]
+    
+    B --> B1[Rust Functions]
+    C --> C1[JS Integration]
+    D --> D1[Browser Environment]
+```
+
+### Implementation Status:
+✅ **Implemented:**
+- Unit tests for basic functionality
+- Browser environment tests
+- Unicode handling tests
+- Concurrent execution tests
+- Test documentation
+- CI/CD test configuration
+
+❌ **Not Implemented:**
+- Calculator operation tests
+- Memory operation tests
+- Error handling tests
+- UI interaction tests
+- State management tests
+- Performance benchmarks
+- Cross-browser compatibility tests
+
+[Rest of Lesson content...]
+
+================
+File: lessons/tutorial-series.md
+================
+Packing repository using repomix...
+Querying Gemini AI using gemini-2.0-flash-thinking-exp-01-21...
+Okay, I will create a story-based tutorial series for building a Rust WebAssembly calculator, aimed at beginners, focusing on implementation with clear lessons, explanations, and code.
+
+**Tutorial Series: Rusty's WebAssembly Calculator Adventure**
+
+**Target Audience:** Beginners to Rust, WebAssembly, and web development.
+
+**Story Premise:** Meet Rusty, a curious learner who wants to build a web calculator using Rust and WebAssembly. Follow Rusty's journey as he learns step-by-step, building his calculator from scratch.
+
+**Tutorial Structure (Lessons):**
+
+1.  **Lesson 1: Setting the Stage - Project Setup**
+2.  **Lesson 2: Hello WASM - Your First Rust Function on the Web**
+3.  **Lesson 3: Building the Calculator's Face - Basic UI with HTML**
+4.  **Lesson 4: Making Buttons Clickable - JavaScript Interaction**
+5.  **Lesson 5: Displaying Results from Rust - Connecting WASM to UI**
+6.  **Lesson 6: Core Logic - Implementing Calculator Functions in Rust**
+7.  **Lesson 7: Bringing it Together - Wiring Up the Calculator**
+
+**(Start of Tutorial Series Content)**
+
+---
+
+# Rusty's WebAssembly Calculator Adventure - Tutorial Series
+
+Welcome to Rusty's WebAssembly Calculator Adventure! In this series, we'll follow Rusty, a budding developer, as he builds a fully functional web calculator using the power of Rust and WebAssembly (WASM).  Don't worry if you're new to these technologies – we'll guide you through each step in a clear, easy-to-understand way. Let's start building!
+
+## Lesson 1: Setting the Stage - Project Setup
+
+**Rusty's Story:** "I've heard Rust is super fast and WebAssembly lets you run code in the browser. I want to combine them to make a cool calculator! But where do I even begin?"
+
+**Lesson Objective:**  Set up your development environment and create the basic project structure for our Rust WASM calculator.
+
+**What you'll need:**
+
+*   **Rust Toolchain:** If you don't have Rust installed, follow the instructions at [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install).
+*   **wasm-pack:**  This tool helps us build Rust code into WebAssembly. Install it by running `cargo install wasm-pack` in your terminal.
+*   **Node.js and npm:**  Needed for development server and JavaScript tooling. Install from [https://nodejs.org/](https://nodejs.org/).
+
+**Steps:**
+
+1.  **Create a new Rust project:**
+    Open your terminal and run:
+    ```bash
+    cargo new --lib rust-wasm-calc
+    cd rust-wasm-calc
+    ```
+    This creates a new Rust library project named `rust-wasm-calc`.
+
+2.  **Modify `Cargo.toml`:**
+    Open `Cargo.toml` in your code editor. This file manages your Rust project's dependencies.  Replace its contents with the following:
+
+    ```toml
+    [package]
+    name = "rust-wasm-calc"
+    version = "0.1.0"
+    edition = "2021"
+
+    [lib]
+    crate-type = ["cdylib", "rlib"]
+
+    [dependencies]
+    wasm-bindgen = "0.2"
+
+    [dev-dependencies]
+    wasm-bindgen-test = "0.3"
+    ```
+    *   `crate-type = ["cdylib", "rlib"]`:  Specifies that we want to build a dynamic library (`cdylib`) for WebAssembly and a regular Rust library (`rlib`).
+    *   `wasm-bindgen = "0.2"`:  Includes the `wasm-bindgen` library, which is crucial for communication between Rust and JavaScript.
+
+3.  **Create `index.html`:**
+    In the root of your `rust-wasm-calc` project directory, create a new file named `index.html`.  This will be our basic webpage. Add the following HTML structure:
+
+    ```html
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Rust WASM Calculator</title>
+    </head>
+    <body>
+        <div id="display">Loading WASM...</div>
+        <script type="module">
+            import init, { hello } from './pkg/rust_wasm_calc.js';
+
+            async function run() {
+                await init();
+                const display = document.getElementById('display');
+                const message = hello("WebAssembly");
+                display.textContent = message;
+            }
+
+            run();
+        </script>
+    </body>
+    </html>
+    ```
+    *   This is a very basic HTML page with a `div` for our calculator display and a `<script>` tag to load and run our WASM module.
+
+4.  **Build the WASM module:**
+    Run the following command in your terminal from the project root:
+    ```bash
+    wasm-pack build --target web
+    ```
+    This command compiles your Rust code to WebAssembly and generates JavaScript bindings in the `pkg` directory.
+
+5.  **Run a local server:**
+    To view your webpage, you need a simple HTTP server. If you don't have one, you can install `http-server` globally using npm:
+    ```bash
+    npm install -g http-server
+    ```
+    Then, start the server in your project root:
+    ```bash
+    http-server . -p 8080
+    ```
+    Open your browser and go to `http://localhost:8080`.
+
+**Lesson Summary:**
+
+Rusty has successfully set up his project! He created a Rust library, configured `Cargo.toml` for WASM, created a basic `index.html`, and built his first WASM module. Now he's ready to write some Rust code that interacts with the web.
+
+**Next Up: Lesson 2 - Hello WASM!** We'll write our first Rust function that can be called from JavaScript and display a greeting on our webpage.
+
+---
+
+## Lesson 2: Hello WASM - Your First Rust Function on the Web
+
+**Rusty's Story:** "Okay, project setup is done. Now, how do I actually write Rust code that the webpage can use? I want to see 'Hello' on the screen!"
+
+**Lesson Objective:** Write a simple Rust function, compile it to WASM, and call it from JavaScript to display a greeting in the browser.
+
+**Steps:**
+
+1.  **Modify `src/lib.rs`:**
+    Open `src/lib.rs`. This is where our Rust code lives. Replace its content with the following:
+
+    ```rust
+    use wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen]
+    pub fn hello(name: &str) -> String {
+        format!("Hello, {}!", name)
+    }
+    ```
+    *   `use wasm_bindgen::prelude::*;`: Imports necessary functionalities from the `wasm-bindgen` crate.
+    *   `#[wasm_bindgen]`: This attribute is *key*. It tells `wasm-bindgen` to make this Rust function accessible from JavaScript.
+    *   `pub fn hello(name: &str) -> String`:  Defines a public function named `hello` that takes a string slice (`&str`) as input and returns a `String`. This is our "Hello World" function!
+
+2.  **Rebuild the WASM module:**
+    In your terminal, run `wasm-pack build --target web` again. This recompiles your Rust code with the new `hello` function.
+
+3.  **Check `index.html` (it should already be set up from Lesson 1):**
+    Make sure your `index.html` `<script>` section looks like this:
+
+    ```html
+    <script type="module">
+        import init, { hello } from './pkg/rust_wasm_calc.js';
+
+        async function run() {
+            await init();
+            const display = document.getElementById('display');
+            const message = hello("WebAssembly");
+            display.textContent = message;
+        }
+
+        run();
+    </script>
+    ```
+    *   `import { hello } from './pkg/rust_wasm_calc.js';`:  This line imports the `hello` function that we just created in Rust, making it available in our JavaScript code.
+    *   `const message = hello("WebAssembly");`: Calls the `hello` function from Rust, passing "WebAssembly" as the `name` argument.
+    *   `display.textContent = message;`: Sets the text content of the `div` with the ID `display` to the result of the `hello` function.
+
+4.  **Refresh your browser:**
+    Go back to your browser at `http://localhost:8080` and refresh the page.
+
+**Success!** You should now see "Hello, WebAssembly!" displayed on your webpage instead of "Loading WASM...".
+
+**Lesson Summary:**
+
+Rusty wrote his first Rust function that's accessible from the web! He learned about the `#[wasm_bindgen]` attribute and how to call Rust functions from JavaScript.  He's one step closer to a calculator!
+
+**Next Up: Lesson 3 - Building the Calculator's Face!** We'll create the user interface for our calculator using HTML and make it look like a real calculator.
+
+---
+
+## Lesson 3: Building the Calculator's Face - Basic UI with HTML
+
+**Rusty's Story:** "Great, 'Hello' works! But a calculator needs buttons and a display that looks like a calculator, not just plain text. Time to work on the looks!"
+
+**Lesson Objective:** Create the basic HTML structure for our calculator's user interface, including a display and buttons, using Bootstrap for styling.
+
+**Steps:**
+
+1.  **Update `index.html` with Bootstrap:**
+    Replace the entire content of your `index.html` file with the following code. This incorporates Bootstrap for styling and sets up the calculator layout:
+
+    ```html
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Rust WASM Calculator</title>
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Custom CSS (optional, for now) -->
+        <style>
+            .btn-calc { min-width: 60px; height: 60px; }
+            #display { font-size: 2rem; text-align: right; padding: 1rem; }
+            .calculator-container { max-width: 400px; margin: auto; } /* Center calculator */
+        </style>
+    </head>
+    <body class="bg-light min-vh-100 d-flex align-items-center py-5">
+        <div class="container">
+            <div class="calculator-container">
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">WASM Calculator</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="display" class="bg-light border-bottom">
+                            0
+                        </div>
+                        <div class="p-3">
+                            <div class="row g-2">
+                                <!-- Row 1: Memory Operations -->
+                                <div class="col-3"><button class="btn btn-secondary w-100 btn-calc">MC</button></div>
+                                <div class="col-3"><button class="btn btn-secondary w-100 btn-calc">MR</button></div>
+                                <div class="col-3"><button class="btn btn-secondary w-100 btn-calc">M+</button></div>
+                                <div class="col-3"><button class="btn btn-secondary w-100 btn-calc">M-</button></div>
+                                <!-- Row 2: Clear and Operations -->
+                                <div class="col-6"><button class="btn btn-danger w-100 btn-calc">C</button></div>
+                                <div class="col-3"><button class="btn btn-danger w-100 btn-calc">CE</button></div>
+                                <div class="col-3"><button class="btn btn-primary w-100 btn-calc">/</button></div>
+                                <!-- Row 3-6: Numbers and Operations -->
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">7</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">8</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">9</button></div>
+                                <div class="col-3"><button class="btn btn-primary w-100 btn-calc">×</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">4</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">5</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">6</button></div>
+                                <div class="col-3"><button class="btn btn-primary w-100 btn-calc">-</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">1</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">2</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">3</button></div>
+                                <div class="col-3"><button class="btn btn-primary w-100 btn-calc">+</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">±</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">0</button></div>
+                                <div class="col-3"><button class="btn btn-light w-100 btn-calc">.</button></div>
+                                <div class="col-3"><button class="btn btn-primary w-100 btn-calc">=</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Bootstrap Bundle with Popper -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script type="module">
+            import init, { hello } from './pkg/rust_wasm_calc.js';
+
+            async function run() {
+                await init();
+                const display = document.getElementById('display');
+                // For now, let's just keep displaying "Hello, WASM!"
+                // We'll change this later to show calculator output
+                const message = hello("WASM");
+                display.textContent = message;
+            }
+
+            run();
+        </script>
+    </body>
+    </html>
+    ```
+
+    *   **Bootstrap Integration:**  We've added Bootstrap CSS via CDN link in the `<head>`.  Bootstrap provides pre-built styles and layout components.
+    *   **Calculator Structure:**  We use Bootstrap's grid system (`container`, `row`, `col`) and card component (`card`, `card-header`, `card-body`) to create the calculator layout.
+    *   **Display (`#display`):**  A `div` with `id="display"` will act as our calculator's display.
+    *   **Buttons:** We've added HTML `<button>` elements for all the calculator buttons (numbers, operations, memory, clear, etc.).  Bootstrap button classes (`btn`, `btn-primary`, `btn-light`, etc.) are used for styling.
+    *   **Custom CSS:**  Basic CSS is added in `<style>` tag to adjust button size, display font size, and center the calculator.
+
+2.  **Refresh your browser:**
+    Refresh `http://localhost:8080` in your browser.
+
+**Wow!**  Rusty now has a calculator interface that looks much more like a real calculator. It's styled with Bootstrap and has all the buttons we need.  However, the buttons don't do anything yet.
+
+**Lesson Summary:**
+
+Rusty has built the visual structure of his calculator using HTML and styled it with Bootstrap. He learned about Bootstrap's grid system and button components.  The calculator is starting to take shape!
+
+**Next Up: Lesson 4 - Making Buttons Clickable!**  We'll use JavaScript to detect button clicks and start making the calculator interactive.
+
+---
+
+## Lesson 4: Making Buttons Clickable - JavaScript Interaction
+
+**Rusty's Story:** "My calculator looks great, but it's just a picture right now!  I need to make these buttons actually *do* something when I click them. Time for some JavaScript magic!"
+
+**Lesson Objective:** Use JavaScript to detect clicks on the calculator buttons and display the button's text content in the calculator display.
+
+**Steps:**
+
+1.  **Update `index.html` JavaScript:**
+    Modify the `<script type="module">` section in your `index.html` to include event listeners for the buttons:
+
+    ```html
+    <script type="module">
+        import init, { hello } from './pkg/rust_wasm_calc.js';
+
+        async function run() {
+            await init();
+            const display = document.getElementById('display');
+            display.textContent = '0'; // Initialize display to 0
+
+            // Get all buttons within the calculator
+            const buttons = document.querySelectorAll('.calculator-container button');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const buttonText = button.textContent;
+                    if (display.textContent === '0') {
+                        display.textContent = buttonText; // Replace '0' on first digit
+                    } else {
+                        display.textContent += buttonText; // Append to display
+                    }
+                });
+            });
+        }
+
+        run();
+    </script>
+    ```
+
+    *   `display.textContent = '0';`:  Initializes the calculator display to '0' when the page loads.
+    *   `document.querySelectorAll('.calculator-container button');`: Selects all `<button>` elements that are descendants of the element with class `calculator-container`. This gets all our calculator buttons.
+    *   `buttons.forEach(...)`:  Loops through each button.
+    *   `button.addEventListener('click', ...)`:  Adds a click event listener to each button.
+    *   **Inside the click handler:**
+        *   `const buttonText = button.textContent;`: Gets the text content of the clicked button (e.g., "1", "+", "=").
+        *   `if (display.textContent === '0') { ... } else { ... }`:  Handles the first digit input: if the display is '0', it replaces '0' with the button text. Otherwise, it appends the button text to the current display content.
+
+2.  **Refresh your browser:**
+    Refresh `http://localhost:8080` in your browser.
+
+**Try it out!** Click on the number buttons and the operation buttons. You should see the button text appearing in the calculator display.  The '0' is replaced when you type the first digit, and subsequent button presses append to the display.
+
+**Lesson Summary:**
+
+Rusty made his calculator interactive! He used JavaScript to add event listeners to the buttons. Now, button clicks are detected, and the button's text is displayed.  The calculator is starting to respond to user input!
+
+**Next Up: Lesson 5 - Displaying Results from Rust!** We'll start connecting our button clicks to Rust functions and display results calculated in Rust WASM.
+
+---
+
+## Lesson 5: Displaying Results from Rust - Connecting WASM to UI
+
+**Rusty's Story:** "Clicking buttons is fun, but right now it's just showing what I clicked. I want to actually *calculate* things in Rust and show the result on the display! How do I get Rust to talk back to the webpage?"
+
+**Lesson Objective:**  Modify our Rust code to perform a simple calculation (let's just add two numbers for now) and display the result in the calculator display after a button click.
+
+**Steps:**
+
+1.  **Update `src/lib.rs` with an `add` function:**
+    Open `src/lib.rs` and add a new function called `add` that takes two numbers and returns their sum.  Also, let's keep our `hello` function for now.
+
+    ```rust
+    use wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen]
+    pub fn hello(name: &str) -> String {
+        format!("Hello, {}!", name)
+    }
+
+    #[wasm_bindgen]
+    pub fn add(a: i32, b: i32) -> i32 {
+        a + b
+    }
+    ```
+    *   `#[wasm_bindgen] pub fn add(a: i32, b: i32) -> i32`:  Another `#[wasm_bindgen]` function, this time named `add`. It takes two 32-bit integers (`i32`) as input and returns their sum as an `i32`.
+
+2.  **Rebuild the WASM module:**
+    Run `wasm-pack build --target web` in your terminal again.
+
+3.  **Update `index.html` JavaScript to call `add`:**
+    Modify the `<script type="module">` section in `index.html`. We'll simplify the button click handling for now and just call our `add` function when *any* button is clicked (we'll refine this later).
+
+    ```html
+    <script type="module">
+        import init, { hello, add } from './pkg/rust_wasm_calc.js'; // Import 'add'
+
+        async function run() {
+            await init();
+            const display = document.getElementById('display');
+            display.textContent = '0';
+
+            const buttons = document.querySelectorAll('.calculator-container button');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // For now, let's just add 5 + 3 and display the result
+                    const result = add(5, 3);
+                    display.textContent = result.toString(); // Convert result to string
+                });
+            });
+        }
+
+        run();
+    </script>
+    ```
+    *   `import { hello, add } from './pkg/rust_wasm_calc.js';`: Now we import both `hello` and `add` functions from our WASM module.
+    *   `const result = add(5, 3);`: Inside the button click handler, we call the `add` function from Rust with the arguments `5` and `3`.
+    *   `display.textContent = result.toString();`: We get the result from the `add` function (which is a number), convert it to a string using `.toString()`, and then display it in our calculator display.
+
+4.  **Refresh your browser:**
+    Refresh `http://localhost:8080`.
+
+**Click any button on your calculator.**  No matter which button you click, the display should now show "8"!  This is because we are hardcoding `add(5, 3)` to be called on every button click.
+
+**Lesson Summary:**
+
+Rusty successfully called a Rust function (`add`) from his JavaScript code and displayed the result in the calculator! He's starting to see how Rust and JavaScript can work together to build calculator logic and UI.
+
+**Next Up: Lesson 6 - Core Logic!** We'll implement more calculator operations (subtraction, multiplication, division) in Rust and prepare to use them in our calculator.
+
+---
+
+## Lesson 6: Core Logic - Implementing Calculator Functions in Rust
+
+**Rusty's Story:** "Adding 5 and 3 is cool, but a real calculator needs to do more! Let's add subtraction, multiplication, and division to my Rust WASM module.  Then we'll have the core math part ready!"
+
+**Lesson Objective:** Implement the basic arithmetic operations (addition, subtraction, multiplication, division) in Rust WASM.
+
+**Steps:**
+
+1.  **Update `src/lib.rs` with more functions:**
+    Open `src/lib.rs` and add the functions for subtraction, multiplication, and division, along with the existing `hello` and `add` functions:
+
+    ```rust
+    use wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen]
+    pub fn hello(name: &str) -> String {
+        format!("Hello, {}!", name)
+    }
+
+    #[wasm_bindgen]
+    pub fn add(a: f64, b: f64) -> f64 { // Changed to f64 for decimals
+        a + b
+    }
+
+    #[wasm_bindgen]
+    pub fn subtract(a: f64, b: f64) -> f64 {
+        a - b
+    }
+
+    #[wasm_bindgen]
+    pub fn multiply(a: f64, b: f64) -> f64 {
+        a * b
+    }
+
+    #[wasm_bindgen]
+    pub fn divide(a: f64, b: f64) -> f64 {
+        if b == 0.0 {
+            // Handle division by zero (return NaN for now)
+            std::f64::NAN
+        } else {
+            a / b
+        }
+    }
+    ```
+    *   **`f64` for Decimals:** We've changed the data type for `add`, `subtract`, `multiply`, and `divide` to `f64` (64-bit floating-point numbers). This allows our calculator to handle decimal numbers.
+    *   **Division by Zero Handling:** In the `divide` function, we've added a check for division by zero. If `b` is 0, it returns `std::f64::NAN` (Not a Number) to avoid errors.
+
+2.  **Rebuild the WASM module:**
+    Run `wasm-pack build --target web` again.
+
+3.  **No JavaScript changes needed yet:**
+    For this lesson, we are just focusing on the Rust side. We'll connect these new functions to our JavaScript and UI in the next lesson.
+
+**Lesson Summary:**
+
+Rusty has implemented the core arithmetic logic for his calculator in Rust WASM! He added functions for addition, subtraction, multiplication, and division, and learned about using `f64` for decimal numbers and handling division by zero.  The calculator's brain is getting smarter!
+
+**Next Up: Lesson 7 - Bringing it Together!**  We'll connect all the pieces: JavaScript button clicks will trigger the appropriate Rust functions, and the results will be displayed on the calculator. We'll build a fully functional basic calculator!
+
+---
+
+## Lesson 7: Bringing it Together - Wiring Up the Calculator
+
+**Rusty's Story:** "I've got the buttons, I've got the math functions in Rust... Now, the final step!  I need to connect the button clicks to the right Rust functions and make this thing actually *calculate*!"
+
+**Lesson Objective:** Connect the calculator UI buttons to the Rust WASM functions to perform calculations and display the results. This will create a basic working calculator.
+
+**This lesson is a bit more involved, so we'll break it down further:**
+
+**7.1.  JavaScript State Management:**
+
+We need to keep track of the current number being entered, the operator selected, and the previous number.  Let's add some JavaScript variables to manage this state within our `<script type="module">` block in `index.html` (inside the `run` function):
+
+```javascript
+let currentNumber = '';
+let operator = null;
+let previousNumber = null;
+```
+
+*   `currentNumber`:  Stores the digits the user is currently typing.
+*   `operator`: Stores the selected operator (+, -, *, /).
+*   `previousNumber`: Stores the number entered before an operator is selected.
+
+**7.2.  Update Button Click Handler:**
+
+Modify the button click event listener in your JavaScript to handle different button types (numbers, operators, equals, clear).  Replace the existing button click handler with this more complex one:
+
+```javascript
+buttons.forEach(button => {
+    button.addEventListener('click', () => {
+        const buttonText = button.textContent;
+
+        if (/[0-9]|\./.test(buttonText)) { // Number or decimal point
+            if (display.textContent === '0' || display.textContent === 'Error') {
+                display.textContent = buttonText;
+            } else {
+                display.textContent += buttonText;
+            }
+            currentNumber = display.textContent;
+        } else if (/[\+\-×/]/.test(buttonText)) { // Operator
+            if (operator !== null) {
+                calculateResult(); // Perform pending calculation first
+            }
+            previousNumber = parseFloat(currentNumber);
+            operator = buttonText;
+            currentNumber = '';
+            display.textContent = '0'; // Clear display for next number
+        } else if (buttonText === '=') { // Equals
+            calculateResult();
+            operator = null;
+            previousNumber = null;
+        } else if (buttonText === 'C' || buttonText === 'CE') { // Clear
+            clearCalculator();
+        }
+    });
+});
+```
+
+*   **Number/Decimal Input (`/[0-9]|\./.test(buttonText)`):**
+    *   If the button text is a digit or a decimal point, it appends it to the `display` and updates `currentNumber`.
+*   **Operator Input (`/[\+\-×/]/.test(buttonText)`):**
+    *   If an operator (+, -, ×, /) is clicked:
+        *   If there's a pending operator (`operator !== null`), it first calls `calculateResult()` to complete the previous operation.
+        *   Stores the `currentNumber` as `previousNumber`.
+        *   Sets the `operator` to the clicked operator.
+        *   Resets `currentNumber` and clears the `display` to prepare for the next number input.
+*   **Equals Button (`buttonText === '='`):**
+    *   When "=" is clicked, it calls `calculateResult()` to perform the calculation.
+    *   Resets `operator` and `previousNumber`.
+*   **Clear Buttons (`buttonText === 'C' || buttonText === 'CE'`):**
+    *   Calls `clearCalculator()` to reset the calculator state.
+
+**7.3.  Implement `calculateResult()` Function:**
+
+Add the `calculateResult()` JavaScript function inside the `<script type="module">` block:
+
+```javascript
+function calculateResult() {
+    if (operator === null || previousNumber === null) return;
+
+    const num1 = previousNumber;
+    const num2 = parseFloat(currentNumber);
+    let result;
+
+    switch (operator) {
+        case '+': result = add(num1, num2); break;
+        case '-': result = subtract(num1, num2); break;
+        case '×': result = multiply(num1, num2); break;
+        case '/': result = divide(num1, num2); break;
+        default: return;
+    }
+
+    if (isNaN(result)) {
+        display.textContent = 'Error';
+    } else {
+        display.textContent = result.toString();
+    }
+    currentNumber = display.textContent; // Update currentNumber with result
+    operator = null; // Clear operator after calculation
+    previousNumber = null; // Clear previousNumber
+}
+```
+
+*   **`if (operator === null || previousNumber === null) return;`**:  Checks if we have both an operator and a previous number before attempting to calculate.
+*   **`parseFloat(currentNumber)`**:  Parses the `currentNumber` string to a floating-point number.
+*   **`switch (operator)`**:  Uses a `switch` statement to call the appropriate Rust WASM function (`add`, `subtract`, `multiply`, `divide`) based on the selected `operator`.
+*   **`isNaN(result)`**: Checks if the result is `NaN` (Not a Number), which can happen in division by zero. If it is, it displays "Error".
+*   **`display.textContent = result.toString();`**: Displays the calculated `result`.
+*   Updates `currentNumber`, `operator`, and `previousNumber` after calculation.
+
+**7.4.  Implement `clearCalculator()` Function:**
+
+Add the `clearCalculator()` JavaScript function:
+
+```javascript
+function clearCalculator() {
+    currentNumber = '';
+    operator = null;
+    previousNumber = null;
+    display.textContent = '0';
+}
+```
+
+*   Resets all state variables and clears the display to '0'.
+
+**7.5. Rebuild and Refresh:**
+
+*   Run `wasm-pack build --target web` one last time to ensure your Rust code is up-to-date.
+*   Refresh your browser at `http://localhost:8080`.
+
+**Test your calculator!** Try basic calculations like:
+
+*   `5 + 3 =`  (should show 8)
+*   `10 - 4 =` (should show 6)
+*   `2 × 6 =`  (should show 12)
+*   `15 / 3 =` (should show 5)
+*   `5 / 0 =`  (should show "Error")
+
+**Congratulations!** Rusty has built a basic, functional web calculator using Rust and WebAssembly! He connected the UI buttons to Rust functions and made calculations happen in the browser using WASM.
+
+**Lesson Summary:**
+
+Rusty brought all the pieces together! He implemented JavaScript state management, updated the button click handler to perform calculations using Rust WASM functions, and created a working calculator. He learned how JavaScript can interact with Rust WASM to build web applications.
+
+**Where to go next?**
+
+This is just the beginning! Rusty (and you!) can now expand this calculator with more features:
+
+*   **Memory functions (MC, MR, M+, M-)**
+*   **More advanced operations (square root, percentages, etc.)**
+*   **Error handling improvements**
+*   **Better UI/UX**
+*   **Testing (Unit tests in Rust, integration tests in JavaScript)**
+
+This tutorial series gave you a foundation for building web applications with Rust and WebAssembly. Keep experimenting and building!  Happy coding!
+
+**(End of Tutorial Series Content)**
+
+---
+
+This completes the story-based tutorial series. It covers the basic implementation of a Rust WASM calculator for beginners, focusing on step-by-step instructions and explanations. It avoids testing to keep the focus on the core implementation as requested.
+
+================
+File: local-research/rust-wasm-best-practices.md
+================
+Querying Perplexity AI using sonar-pro for: what are the best practices for rust wasm integration and optimization tips
+Here are the best practices and optimization tips for Rust WebAssembly integration:
+
+1. Use wasm-pack to compile Rust code to WebAssembly and generate JavaScript bindings[1][5].
+
+2. Compile with optimizations enabled using --release flag[6]:
+
+```
+cargo build --target wasm32-unknown-unknown --release
+```
+
+3. Minimize WebAssembly bundle size using tree shaking, code splitting, and efficient serialization[2].
+
+4. Use wasm-opt to further optimize the WebAssembly binary[2]:
+
+```
+wasm-opt -Oz -o optimized.wasm original.wasm
+```
+
+5. Leverage Rust's concurrency features for parallel computations[2]:
+
+```rust
+use std::thread;
+
+let handles: Vec<_> = (0..10).map(|_| {
+    thread::spawn(|| {
+        // Perform CPU-bound work
+        let sum: u32 = (1..1000).sum();
+        sum
+    })
+}).collect();
+```
+
+6. Minimize calls between JavaScript and Rust to reduce overhead[6].
+
+7. Use wee_alloc as a smaller memory allocator[5]:
+
+```rust
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+```
+
+8. Use the #[inline] attribute for performance-critical functions[5].
+
+9. Implement higher-level processing in Rust and make fewer calls from JavaScript[6].
+
+10. Profile and measure performance to identify bottlenecks[5].
+
+11. Use tools like console_error_panic_hook to capture Rust panics in the browser console[5].
+
+12. For complex data types, use libraries like serde-wasm-bindgen for efficient serialization[5].
+
+13. Target wasm32-wasi platform for multithreading support[5].
+
+14. Use browser developer tools for profiling WebAssembly modules[5].
+
+15. Avoid allocation in hot code paths when possible[9].
+
+By following these practices, you can optimize the performance and size of your Rust WebAssembly integration.
+
+================
+File: local-research/rust-wasm-tdd.md
+================
+Querying Perplexity AI using sonar-pro for: rust wasm hello world best practices with test driven development
+To create a Rust WebAssembly "Hello World" project with test-driven development, follow these best practices:
+
+1. Set up the project:
+
+```bash
+cargo new --lib hello-wasm
+cd hello-wasm
+```
+
+2. Configure Cargo.toml:
+
+```toml
+[package]
+name = "hello-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+```
+
+3. Write the main function in src/lib.rs:
+
+```rust
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+pub fn greet(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+```
+
+4. Add tests in src/lib.rs:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    fn test_greet() {
+        assert_eq!(greet("World"), "Hello, World!");
+    }
+}
+```
+
+5. Run tests:
+
+```bash
+wasm-pack test --node
+```
+
+6. Build the project:
+
+```bash
+wasm-pack build --target web
+```
+
+7. Create an HTML file to use the WebAssembly module:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hello WASM</title>
+</head>
+<body>
+    <script type="module">
+        import init, { greet } from './pkg/hello_wasm.js';
+        
+        async function run() {
+            await init();
+            const result = greet("WASM");
+            console.log(result);
+        }
+        
+        run();
+    </script>
+</body>
+</html>
+```
+
+8. Serve the project using a local web server and open it in a browser to see the result[1][3][4].
+
+This approach follows test-driven development by writing tests before implementing functionality, uses wasm-bindgen for JavaScript interop, and follows Rust WebAssembly best practices[1][2][4].
+
+================
+File: local-research/rust-wasm-testing.md
+================
+Querying Perplexity AI using sonar-pro for: rust wasm testing best practices and patterns
+Here are some best practices and patterns for testing Rust WebAssembly code:
+
+1. Use wasm-pack for testing Rust WASM projects[2]. It provides the `wasm-pack test` command to run tests in a WebAssembly environment.
+
+2. Write unit tests directly in your Rust code using the #[cfg(test)] attribute[3]. For example:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_add() {
+        assert_eq!(add(2, 3), 5);
+    }
+}
+```
+
+3. For integration testing, use frameworks like Jest with Puppeteer or Playwright to load WASM modules in a browser and run automated tests[3].
+
+4. Perform performance testing using JavaScript's performance APIs to measure WASM function execution time[3]:
+
+```javascript
+const start = performance.now();
+const result = wasmModule.exports.yourFunction();
+const end = performance.now();
+console.log(`Execution time: ${end - start} milliseconds`);
+```
+
+5. Implement security testing using fuzz testing tools like American Fuzzy Lop (AFL) to find edge cases and vulnerabilities[3].
+
+6. Set up continuous integration using GitHub Actions or similar to automate testing on every commit[3].
+
+7. Use the `#![no_std]` attribute and `extern crate std;` pattern for optionally std-compatible crates[4]:
+
+```rust
+#![no_std]
+
+#[cfg(feature = "std")]
+extern crate std;
+```
+
+8. Test no_std builds on targets without std like thumbv7em-none-eabi to ensure true no_std compatibility[4].
+
+9. Use web-time instead of instant for a std::time::Instant substitute in WASM[4].
+
+10. Avoid using wee_alloc as it's unmaintained. The default allocator is generally sufficient for WASM[4].
+
+================
+File: src/lib.rs
+================
+//! Rust WASM Calculator is a WebAssembly calculator built with Rust.
+//!
+//! This crate provides a calculator implementation that can be used in web browsers
+//! through WebAssembly. It follows test-driven development practices and provides
+//! a clean, type-safe interface for basic and advanced calculations.
+//!
+//! # Features
+//!
+//! - WebAssembly integration using wasm-bindgen
+//! - Basic arithmetic operations
+//! - Memory functions
+//! - State management for calculator operations
+//! - Error handling with proper JavaScript integration
+//!
+//! # Examples
+//!
+//! ```rust
+//! use rust_wasm_calc::hello;
+//!
+//! // Basic greeting functionality
+//! let greeting = hello("Calculator");
+//! assert_eq!(greeting, "Hello, Calculator!");
+//! ```
+
+use wasm_bindgen::prelude::*;
+
+// Include the state module
+pub mod state;
+
+/// Returns a friendly greeting message.
+///
+/// This function is currently a placeholder that demonstrates the WebAssembly
+/// binding functionality. It will be replaced with calculator operations
+/// in future versions.
+///
+/// # Arguments
+///
+/// * `name` - A string slice that contains the name to greet
+///
+/// # Examples
+///
+/// ```rust
+/// use rust_wasm_calc::hello;
+///
+/// let result = hello("World");
+/// assert_eq!(result, "Hello, World!");
+///
+/// // Works with empty strings
+/// let empty = hello("");
+/// assert_eq!(empty, "Hello, !");
+/// ```
+///
+/// # Note
+///
+/// This function is exposed to JavaScript through WebAssembly and can be
+/// called from web applications.
+#[wasm_bindgen]
+pub fn hello(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+/// Calculator module providing basic arithmetic operations.
+///
+/// This module contains functions for addition, subtraction, multiplication,
+/// and division, all exposed to JavaScript through WebAssembly bindings.
+pub mod calculator {
+    use wasm_bindgen::prelude::*;
+
+    /// Result type for calculator operations that might fail.
+    ///
+    /// This type is used for operations like division that can result in errors.
+    pub type CalcResult = Result<f64, String>;
+
+    // Memory storage for calculator operations
+    thread_local! {
+        static MEMORY: std::cell::RefCell<f64> = std::cell::RefCell::new(0.0);
+    }
+
+    /// Stores a value in the calculator's memory.
+    ///
+    /// This function overwrites any previous value stored in memory.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value to store in memory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::{memory_store, memory_recall};
+    ///
+    /// memory_store(42.0);
+    /// assert_eq!(memory_recall(), 42.0);
+    /// ```
+    #[wasm_bindgen]
+    pub fn memory_store(value: f64) {
+        MEMORY.with(|memory| {
+            *memory.borrow_mut() = value;
+        });
+    }
+
+    /// Recalls the current value stored in the calculator's memory.
+    ///
+    /// # Returns
+    ///
+    /// The current value stored in memory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::{memory_store, memory_recall};
+    ///
+    /// memory_store(42.0);
+    /// assert_eq!(memory_recall(), 42.0);
+    /// ```
+    #[wasm_bindgen]
+    pub fn memory_recall() -> f64 {
+        MEMORY.with(|memory| {
+            *memory.borrow()
+        })
+    }
+
+    /// Clears the calculator's memory by setting it to zero.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::{memory_store, memory_clear, memory_recall};
+    ///
+    /// memory_store(42.0);
+    /// memory_clear();
+    /// assert_eq!(memory_recall(), 0.0);
+    /// ```
+    #[wasm_bindgen]
+    pub fn memory_clear() {
+        MEMORY.with(|memory| {
+            *memory.borrow_mut() = 0.0;
+        });
+    }
+
+    /// Adds a value to the current value stored in memory.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value to add to the memory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::{memory_clear, memory_add, memory_recall};
+    ///
+    /// memory_clear();
+    /// memory_add(5.0);
+    /// memory_add(3.0);
+    /// assert_eq!(memory_recall(), 8.0);
+    /// ```
+    #[wasm_bindgen]
+    pub fn memory_add(value: f64) {
+        MEMORY.with(|memory| {
+            *memory.borrow_mut() += value;
+        });
+    }
+
+    /// Subtracts a value from the current value stored in memory.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value to subtract from the memory
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::{memory_store, memory_subtract, memory_recall};
+    ///
+    /// memory_store(10.0);
+    /// memory_subtract(3.0);
+    /// assert_eq!(memory_recall(), 7.0);
+    /// ```
+    #[wasm_bindgen]
+    pub fn memory_subtract(value: f64) {
+        MEMORY.with(|memory| {
+            *memory.borrow_mut() -= value;
+        });
+    }
+
+    /// Adds two numbers and returns the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - First operand
+    /// * `b` - Second operand
+    ///
+    /// # Returns
+    ///
+    /// The sum of `a` and `b`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::add;
+    ///
+    /// assert_eq!(add(2.0, 3.0), 5.0);
+    /// assert_eq!(add(-1.0, 1.0), 0.0);
+    /// ```
+    #[wasm_bindgen]
+    pub fn add(a: f64, b: f64) -> f64 {
+        a + b
+    }
+
+    /// Subtracts the second number from the first and returns the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - First operand
+    /// * `b` - Second operand
+    ///
+    /// # Returns
+    ///
+    /// The difference `a - b`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::subtract;
+    ///
+    /// assert_eq!(subtract(5.0, 3.0), 2.0);
+    /// assert_eq!(subtract(1.0, 1.0), 0.0);
+    /// ```
+    #[wasm_bindgen]
+    pub fn subtract(a: f64, b: f64) -> f64 {
+        a - b
+    }
+
+    /// Multiplies two numbers and returns the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - First operand
+    /// * `b` - Second operand
+    ///
+    /// # Returns
+    ///
+    /// The product of `a` and `b`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::multiply;
+    ///
+    /// assert_eq!(multiply(2.0, 3.0), 6.0);
+    /// assert_eq!(multiply(0.0, 5.0), 0.0);
+    /// ```
+    #[wasm_bindgen]
+    pub fn multiply(a: f64, b: f64) -> f64 {
+        a * b
+    }
+
+    /// Divides the first number by the second and returns the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `a` - Dividend (numerator)
+    /// * `b` - Divisor (denominator)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(result)` - The quotient `a / b` if successful
+    /// * `Err(message)` - An error message if division by zero is attempted
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_wasm_calc::calculator::divide;
+    ///
+    /// assert_eq!(divide(6.0, 3.0), Ok(2.0));
+    /// assert_eq!(divide(1.0, 0.0).is_err(), true);
+    /// ```
+    #[wasm_bindgen]
+    pub fn divide(a: f64, b: f64) -> CalcResult {
+        if b == 0.0 {
+            Err("Division by zero is not allowed".to_string())
+        } else {
+            Ok(a / b)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    /// Tests the hello function with a basic Rust string.
+    #[test]
+    fn test_hello_rust() {
+        let result = hello("Rust");
+        assert_eq!(result, "Hello, Rust!");
+    }
+
+    /// Tests the hello function in a browser WebAssembly environment.
+    #[wasm_bindgen_test]
+    fn test_hello_wasm_browser() {
+        let result = hello("WASM");
+        assert_eq!(result, "Hello, WASM!");
+    }
+
+    /// Tests the hello function with an empty string.
+    #[wasm_bindgen_test]
+    fn test_hello_empty_string() {
+        let result = hello("");
+        assert_eq!(result, "Hello, !");
+    }
+
+    /// Tests the hello function with a very long input string.
+    /// This test ensures the function handles large inputs correctly.
+    #[wasm_bindgen_test]
+    fn test_hello_long_string() {
+        let long_name = "a".repeat(1000);
+        let result = hello(&long_name);
+        assert!(result.starts_with("Hello, "));
+        assert!(result.ends_with("!"));
+    }
+}
+
+/// Tests for calculator operations.
+#[cfg(test)]
+mod calculator_tests {
+    use super::calculator::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    /// Tests for the add function.
+    mod add_tests {
+        use super::*;
+
+        /// Tests basic addition with positive numbers.
+        #[test]
+        fn test_add_positive_numbers() {
+            // Arrange
+            let a = 2.0;
+            let b = 3.0;
+            
+            // Act
+            let result = add(a, b);
+            
+            // Assert
+            assert_eq!(result, 5.0);
+        }
+
+        /// Tests addition with negative numbers.
+        #[test]
+        fn test_add_negative_numbers() {
+            // Arrange
+            let a = -2.0;
+            let b = -3.0;
+            
+            // Act
+            let result = add(a, b);
+            
+            // Assert
+            assert_eq!(result, -5.0);
+        }
+
+        /// Tests addition with mixed positive and negative numbers.
+        #[test]
+        fn test_add_mixed_signs() {
+            // Arrange
+            let a = 5.0;
+            let b = -3.0;
+            
+            // Act
+            let result = add(a, b);
+            
+            // Assert
+            assert_eq!(result, 2.0);
+        }
+
+        /// Tests addition with zero.
+        #[test]
+        fn test_add_with_zero() {
+            // Arrange
+            let a = 5.0;
+            let b = 0.0;
+            
+            // Act
+            let result = add(a, b);
+            
+            // Assert
+            assert_eq!(result, 5.0);
+        }
+
+        /// Tests addition with floating point numbers.
+        #[test]
+        fn test_add_floating_point() {
+            // Arrange
+            let a = 0.1;
+            let b = 0.2;
+            
+            // Act
+            let result = add(a, b);
+            
+            // Assert
+            // Use a larger epsilon for floating point comparison
+            const EPSILON: f64 = 1e-10;
+            assert!((result - 0.3).abs() < EPSILON);
+        }
+
+        /// Tests addition in WebAssembly environment.
+        #[wasm_bindgen_test]
+        fn test_add_wasm() {
+            // Arrange
+            let a = 10.0;
+            let b = 20.0;
+            
+            // Act
+            let result = add(a, b);
+            
+            // Assert
+            assert_eq!(result, 30.0);
+        }
+    }
+
+    /// Tests for the subtract function.
+    mod subtract_tests {
+        use super::*;
+
+        /// Tests basic subtraction with positive numbers.
+        #[test]
+        fn test_subtract_positive_numbers() {
+            // Arrange
+            let a = 5.0;
+            let b = 3.0;
+            
+            // Act
+            let result = subtract(a, b);
+            
+            // Assert
+            assert_eq!(result, 2.0);
+        }
+
+        /// Tests subtraction with negative numbers.
+        #[test]
+        fn test_subtract_negative_numbers() {
+            // Arrange
+            let a = -2.0;
+            let b = -3.0;
+            
+            // Act
+            let result = subtract(a, b);
+            
+            // Assert
+            assert_eq!(result, 1.0);
+        }
+
+        /// Tests subtraction with mixed positive and negative numbers.
+        #[test]
+        fn test_subtract_mixed_signs() {
+            // Arrange
+            let a = 5.0;
+            let b = -3.0;
+            
+            // Act
+            let result = subtract(a, b);
+            
+            // Assert
+            assert_eq!(result, 8.0);
+        }
+
+        /// Tests subtraction with zero.
+        #[test]
+        fn test_subtract_with_zero() {
+            // Arrange
+            let a = 5.0;
+            let b = 0.0;
+            
+            // Act
+            let result = subtract(a, b);
+            
+            // Assert
+            assert_eq!(result, 5.0);
+        }
+
+        /// Tests subtraction with floating point numbers.
+        #[test]
+        fn test_subtract_floating_point() {
+            // Arrange
+            let a = 0.3;
+            let b = 0.1;
+            
+            // Act
+            let result = subtract(a, b);
+            
+            // Assert
+            // Use a larger epsilon for floating point comparison
+            const EPSILON: f64 = 1e-10;
+            assert!((result - 0.2).abs() < EPSILON);
+        }
+
+        /// Tests subtraction in WebAssembly environment.
+        #[wasm_bindgen_test]
+        fn test_subtract_wasm() {
+            // Arrange
+            let a = 30.0;
+            let b = 10.0;
+            
+            // Act
+            let result = subtract(a, b);
+            
+            // Assert
+            assert_eq!(result, 20.0);
+        }
+    }
+
+    /// Tests for the multiply function.
+    mod multiply_tests {
+        use super::*;
+
+        /// Tests basic multiplication with positive numbers.
+        #[test]
+        fn test_multiply_positive_numbers() {
+            // Arrange
+            let a = 2.0;
+            let b = 3.0;
+            
+            // Act
+            let result = multiply(a, b);
+            
+            // Assert
+            assert_eq!(result, 6.0);
+        }
+
+        /// Tests multiplication with negative numbers.
+        #[test]
+        fn test_multiply_negative_numbers() {
+            // Arrange
+            let a = -2.0;
+            let b = -3.0;
+            
+            // Act
+            let result = multiply(a, b);
+            
+            // Assert
+            assert_eq!(result, 6.0);
+        }
+
+        /// Tests multiplication with mixed positive and negative numbers.
+        #[test]
+        fn test_multiply_mixed_signs() {
+            // Arrange
+            let a = 5.0;
+            let b = -3.0;
+            
+            // Act
+            let result = multiply(a, b);
+            
+            // Assert
+            assert_eq!(result, -15.0);
+        }
+
+        /// Tests multiplication with zero.
+        #[test]
+        fn test_multiply_with_zero() {
+            // Arrange
+            let a = 5.0;
+            let b = 0.0;
+            
+            // Act
+            let result = multiply(a, b);
+            
+            // Assert
+            assert_eq!(result, 0.0);
+        }
+
+        /// Tests multiplication with floating point numbers.
+        #[test]
+        fn test_multiply_floating_point() {
+            // Arrange
+            let a = 0.1;
+            let b = 0.2;
+            
+            // Act
+            let result = multiply(a, b);
+            
+            // Assert
+            // Use a larger epsilon for floating point comparison
+            const EPSILON: f64 = 1e-10;
+            assert!((result - 0.02).abs() < EPSILON);
+        }
+
+        /// Tests multiplication in WebAssembly environment.
+        #[wasm_bindgen_test]
+        fn test_multiply_wasm() {
+            // Arrange
+            let a = 10.0;
+            let b = 20.0;
+            
+            // Act
+            let result = multiply(a, b);
+            
+            // Assert
+            assert_eq!(result, 200.0);
+        }
+    }
+
+    /// Tests for the divide function.
+    mod divide_tests {
+        use super::*;
+
+        /// Tests basic division with positive numbers.
+        #[test]
+        fn test_divide_positive_numbers() {
+            // Arrange
+            let a = 6.0;
+            let b = 3.0;
+            
+            // Act
+            let result = divide(a, b);
+            
+            // Assert
+            assert_eq!(result.unwrap(), 2.0);
+        }
+
+        /// Tests division with negative numbers.
+        #[test]
+        fn test_divide_negative_numbers() {
+            // Arrange
+            let a = -6.0;
+            let b = -3.0;
+            
+            // Act
+            let result = divide(a, b);
+            
+            // Assert
+            assert_eq!(result.unwrap(), 2.0);
+        }
+
+        /// Tests division with mixed positive and negative numbers.
+        #[test]
+        fn test_divide_mixed_signs() {
+            // Arrange
+            let a = 6.0;
+            let b = -3.0;
+            
+            // Act
+            let result = divide(a, b);
+            
+            // Assert
+            assert_eq!(result.unwrap(), -2.0);
+        }
+
+        /// Tests division by zero.
+        #[test]
+        fn test_divide_by_zero() {
+            // Arrange
+            let a = 5.0;
+            let b = 0.0;
+            
+            // Act
+            let result = divide(a, b);
+            
+            // Assert
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), "Division by zero is not allowed");
+        }
+
+        /// Tests division with floating point numbers.
+        #[test]
+        fn test_divide_floating_point() {
+            // Arrange
+            let a = 0.6;
+            let b = 0.2;
+            
+            // Act
+            let result = divide(a, b);
+            
+            // Assert
+            // Use a larger epsilon for floating point comparison
+            const EPSILON: f64 = 1e-10;
+            assert!((result.unwrap() - 3.0).abs() < EPSILON);
+        }
+
+        /// Tests division in WebAssembly environment.
+        #[wasm_bindgen_test]
+        fn test_divide_wasm() {
+            // Arrange
+            let a = 20.0;
+            let b = 10.0;
+            
+            // Act
+            let result = divide(a, b);
+            
+            // Assert
+            assert_eq!(result.unwrap(), 2.0);
+        }
+
+        /// Tests division by zero in WebAssembly environment.
+        #[wasm_bindgen_test]
+        fn test_divide_by_zero_wasm() {
+            // Arrange
+            let a = 20.0;
+            let b = 0.0;
+            
+            // Act
+            let result = divide(a, b);
+            
+            // Assert
+            assert!(result.is_err());
+            assert_eq!(result.unwrap_err(), "Division by zero is not allowed");
+        }
+    }
+
+    /// Tests for memory operations.
+    mod memory_tests {
+        use super::*;
+
+        /// Tests storing a value in memory.
+        #[test]
+        fn test_memory_store() {
+            // Arrange
+            let value = 42.0;
+            
+            // Act
+            memory_store(value);
+            let result = memory_recall();
+            
+            // Assert
+            assert_eq!(result, 42.0);
+        }
+
+        /// Tests recalling a value from memory.
+        #[test]
+        fn test_memory_recall() {
+            // Arrange
+            memory_store(10.0);
+            
+            // Act
+            let result = memory_recall();
+            
+            // Assert
+            assert_eq!(result, 10.0);
+        }
+
+        /// Tests clearing the memory.
+        #[test]
+        fn test_memory_clear() {
+            // Arrange
+            memory_store(10.0);
+            
+            // Act
+            memory_clear();
+            let result = memory_recall();
+            
+            // Assert
+            assert_eq!(result, 0.0);
+        }
+
+        /// Tests adding to memory.
+        #[test]
+        fn test_memory_add() {
+            // Arrange
+            memory_store(10.0);
+            
+            // Act
+            memory_add(5.0);
+            let result = memory_recall();
+            
+            // Assert
+            assert_eq!(result, 15.0);
+        }
+
+        /// Tests subtracting from memory.
+        #[test]
+        fn test_memory_subtract() {
+            // Arrange
+            memory_store(10.0);
+            
+            // Act
+            memory_subtract(3.0);
+            let result = memory_recall();
+            
+            // Assert
+            assert_eq!(result, 7.0);
+        }
+
+        /// Tests memory operations in sequence.
+        #[test]
+        fn test_memory_sequence() {
+            // Arrange & Act
+            memory_clear();
+            memory_add(5.0);
+            memory_add(10.0);
+            memory_subtract(3.0);
+            let result = memory_recall();
+            
+            // Assert
+            assert_eq!(result, 12.0);
+        }
+
+        /// Tests memory operations in WebAssembly environment.
+        #[wasm_bindgen_test]
+        fn test_memory_wasm() {
+            // Arrange & Act
+            memory_clear();
+            memory_store(20.0);
+            memory_add(5.0);
+            memory_subtract(10.0);
+            let result = memory_recall();
+            
+            // Assert
+            assert_eq!(result, 15.0);
+        }
+    }
+}
+
+================
+File: src/state.rs
+================
+//! Calculator state management module.
+//!
+//! This module provides functionality for managing the calculator's state,
+//! including tracking current input, operations, and memory state.
+
+use wasm_bindgen::prelude::*;
+
+/// Represents the current operation being performed.
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Operation {
+    None,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+}
+
+/// Represents the current state of the calculator.
+#[wasm_bindgen]
+pub struct CalculatorState {
+    /// The current display value
+    display_value: String,
+    /// The first operand for binary operations
+    first_operand: Option<f64>,
+    /// The current operation
+    current_operation: Operation,
+    /// Whether the display should be cleared on next input
+    clear_on_next_input: bool,
+    /// Whether the last button pressed was an operation
+    last_pressed_operation: bool,
+    /// Whether there is an error state
+    error_state: bool,
+}
+
+#[wasm_bindgen]
+impl CalculatorState {
+    /// Creates a new calculator state with default values.
+    ///
+    /// # Returns
+    ///
+    /// A new `CalculatorState` instance with initial values.
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            display_value: "0".to_string(),
+            first_operand: None,
+            current_operation: Operation::None,
+            clear_on_next_input: false,
+            last_pressed_operation: false,
+            error_state: false,
+        }
+    }
+
+    /// Gets the current display value.
+    ///
+    /// # Returns
+    ///
+    /// The current display value as a string.
+    #[wasm_bindgen(getter)]
+    pub fn display_value(&self) -> String {
+        self.display_value.clone()
+    }
+
+    /// Clears the calculator state.
+    ///
+    /// This resets the calculator to its initial state.
+    pub fn clear(&mut self) {
+        self.display_value = "0".to_string();
+        self.first_operand = None;
+        self.current_operation = Operation::None;
+        self.clear_on_next_input = false;
+        self.last_pressed_operation = false;
+        self.error_state = false;
+    }
+
+    /// Clears the current entry without resetting the entire calculation.
+    pub fn clear_entry(&mut self) {
+        self.display_value = "0".to_string();
+        self.clear_on_next_input = false;
+        self.error_state = false;
+    }
+
+    /// Handles input of a digit.
+    ///
+    /// # Arguments
+    ///
+    /// * `digit` - The digit to input (0-9)
+    pub fn input_digit(&mut self, digit: u8) {
+        if self.error_state {
+            return;
+        }
+
+        if digit > 9 {
+            return;
+        }
+
+        if self.clear_on_next_input {
+            self.display_value = digit.to_string();
+            self.clear_on_next_input = false;
+        } else if self.display_value == "0" {
+            self.display_value = digit.to_string();
+        } else {
+            self.display_value.push_str(&digit.to_string());
+        }
+
+        self.last_pressed_operation = false;
+    }
+
+    /// Handles input of a decimal point.
+    pub fn input_decimal(&mut self) {
+        if self.error_state {
+            return;
+        }
+
+        if self.clear_on_next_input {
+            self.display_value = "0.".to_string();
+            self.clear_on_next_input = false;
+        } else if !self.display_value.contains('.') {
+            self.display_value.push('.');
+        }
+
+        self.last_pressed_operation = false;
+    }
+
+    /// Toggles the sign of the current display value.
+    pub fn toggle_sign(&mut self) {
+        if self.error_state {
+            return;
+        }
+
+        if self.display_value != "0" {
+            if self.display_value.starts_with('-') {
+                self.display_value = self.display_value[1..].to_string();
+            } else {
+                self.display_value = format!("-{}", self.display_value);
+            }
+        }
+    }
+
+    /// Handles backspace/delete functionality.
+    pub fn backspace(&mut self) {
+        if self.error_state {
+            return;
+        }
+
+        if self.clear_on_next_input {
+            self.clear_entry();
+            return;
+        }
+
+        if self.display_value.len() > 1 {
+            self.display_value.pop();
+        } else {
+            self.display_value = "0".to_string();
+        }
+    }
+
+    /// Sets the current operation.
+    ///
+    /// # Arguments
+    ///
+    /// * `operation` - The operation to set
+    pub fn set_operation(&mut self, operation: Operation) {
+        if self.error_state {
+            return;
+        }
+
+        // If we already have a pending operation, calculate the result first
+        if self.first_operand.is_some() && !self.last_pressed_operation {
+            self.calculate();
+        }
+
+        match self.display_value.parse::<f64>() {
+            Ok(value) => {
+                self.first_operand = Some(value);
+                self.current_operation = operation;
+                self.clear_on_next_input = true;
+                self.last_pressed_operation = true;
+            }
+            Err(_) => {
+                self.error_state = true;
+                self.display_value = "Error".to_string();
+            }
+        }
+    }
+
+    /// Calculates the result of the current operation.
+    pub fn calculate(&mut self) {
+        if self.error_state {
+            return;
+        }
+
+        if let Some(first) = self.first_operand {
+            match self.display_value.parse::<f64>() {
+                Ok(second) => {
+                    let result = match self.current_operation {
+                        Operation::Add => Ok(first + second),
+                        Operation::Subtract => Ok(first - second),
+                        Operation::Multiply => Ok(first * second),
+                        Operation::Divide => {
+                            if second == 0.0 {
+                                Err("Division by zero")
+                            } else {
+                                Ok(first / second)
+                            }
+                        }
+                        Operation::None => Ok(second),
+                    };
+
+                    match result {
+                        Ok(value) => {
+                            // Format the result to avoid unnecessary decimal places
+                            if value == (value as i64) as f64 {
+                                self.display_value = format!("{}", value as i64);
+                            } else {
+                                self.display_value = format!("{}", value);
+                            }
+                            self.first_operand = Some(value);
+                        }
+                        Err(_) => {
+                            self.error_state = true;
+                            self.display_value = "Error".to_string();
+                        }
+                    }
+                }
+                Err(_) => {
+                    self.error_state = true;
+                    self.display_value = "Error".to_string();
+                }
+            }
+        }
+
+        self.current_operation = Operation::None;
+        self.clear_on_next_input = true;
+        self.last_pressed_operation = false;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[test]
+    fn test_new_calculator_state() {
+        let state = CalculatorState::new();
+        assert_eq!(state.display_value, "0");
+        assert_eq!(state.first_operand, None);
+        assert_eq!(state.current_operation, Operation::None);
+        assert_eq!(state.clear_on_next_input, false);
+        assert_eq!(state.last_pressed_operation, false);
+        assert_eq!(state.error_state, false);
+    }
+
+    #[test]
+    fn test_input_digit() {
+        let mut state = CalculatorState::new();
+        
+        // Test single digit input
+        state.input_digit(5);
+        assert_eq!(state.display_value, "5");
+        
+        // Test multiple digit input
+        state.input_digit(3);
+        assert_eq!(state.display_value, "53");
+        
+        // Test clear on next input
+        state.clear_on_next_input = true;
+        state.input_digit(7);
+        assert_eq!(state.display_value, "7");
+        assert_eq!(state.clear_on_next_input, false);
+    }
+
+    #[test]
+    fn test_input_decimal() {
+        let mut state = CalculatorState::new();
+        
+        // Test adding decimal to zero
+        state.input_decimal();
+        assert_eq!(state.display_value, "0.");
+        
+        // Test adding digits after decimal
+        state.input_digit(5);
+        assert_eq!(state.display_value, "0.5");
+        
+        // Test that second decimal is ignored
+        state.input_decimal();
+        assert_eq!(state.display_value, "0.5");
+    }
+
+    #[test]
+    fn test_toggle_sign() {
+        let mut state = CalculatorState::new();
+        
+        // Test toggling sign on zero (should remain zero)
+        state.toggle_sign();
+        assert_eq!(state.display_value, "0");
+        
+        // Test toggling sign on positive number
+        state.input_digit(5);
+        state.toggle_sign();
+        assert_eq!(state.display_value, "-5");
+        
+        // Test toggling sign on negative number
+        state.toggle_sign();
+        assert_eq!(state.display_value, "5");
+    }
+
+    #[test]
+    fn test_backspace() {
+        let mut state = CalculatorState::new();
+        
+        // Test backspace on single digit (should become zero)
+        state.input_digit(5);
+        state.backspace();
+        assert_eq!(state.display_value, "0");
+        
+        // Test backspace on multiple digits
+        state.input_digit(1);
+        state.input_digit(2);
+        state.input_digit(3);
+        state.backspace();
+        assert_eq!(state.display_value, "12");
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut state = CalculatorState::new();
+        
+        // Set up a non-default state
+        state.input_digit(5);
+        state.set_operation(Operation::Add);
+        state.input_digit(3);
+        
+        // Test clear
+        state.clear();
+        assert_eq!(state.display_value, "0");
+        assert_eq!(state.first_operand, None);
+        assert_eq!(state.current_operation, Operation::None);
+        assert_eq!(state.clear_on_next_input, false);
+    }
+
+    #[test]
+    fn test_clear_entry() {
+        let mut state = CalculatorState::new();
+        
+        // Set up a calculation
+        state.input_digit(5);
+        state.set_operation(Operation::Add);
+        state.input_digit(3);
+        
+        // Test clear entry (should only clear current entry)
+        state.clear_entry();
+        assert_eq!(state.display_value, "0");
+        assert_eq!(state.first_operand, Some(5.0));
+        assert_eq!(state.current_operation, Operation::Add);
+    }
+
+    #[test]
+    fn test_addition() {
+        let mut state = CalculatorState::new();
+        
+        state.input_digit(5);
+        state.set_operation(Operation::Add);
+        state.input_digit(3);
+        state.calculate();
+        
+        assert_eq!(state.display_value, "8");
+    }
+
+    #[test]
+    fn test_subtraction() {
+        let mut state = CalculatorState::new();
+        
+        state.input_digit(5);
+        state.set_operation(Operation::Subtract);
+        state.input_digit(3);
+        state.calculate();
+        
+        assert_eq!(state.display_value, "2");
+    }
+
+    #[test]
+    fn test_multiplication() {
+        let mut state = CalculatorState::new();
+        
+        state.input_digit(5);
+        state.set_operation(Operation::Multiply);
+        state.input_digit(3);
+        state.calculate();
+        
+        assert_eq!(state.display_value, "15");
+    }
+
+    #[test]
+    fn test_division() {
+        let mut state = CalculatorState::new();
+        
+        state.input_digit(6);
+        state.set_operation(Operation::Divide);
+        state.input_digit(3);
+        state.calculate();
+        
+        assert_eq!(state.display_value, "2");
+    }
+
+    #[test]
+    fn test_division_by_zero() {
+        let mut state = CalculatorState::new();
+        
+        state.input_digit(5);
+        state.set_operation(Operation::Divide);
+        state.input_digit(0);
+        state.calculate();
+        
+        assert_eq!(state.display_value, "Error");
+        assert_eq!(state.error_state, true);
+    }
+
+    #[test]
+    fn test_operation_chaining() {
+        let mut state = CalculatorState::new();
+        
+        state.input_digit(5);
+        state.set_operation(Operation::Add);
+        state.input_digit(3);
+        state.set_operation(Operation::Multiply);
+        state.input_digit(2);
+        state.calculate();
+        
+        assert_eq!(state.display_value, "16");
+    }
+
+    #[wasm_bindgen_test]
+    fn test_calculator_state_wasm() {
+        let mut state = CalculatorState::new();
+        
+        state.input_digit(7);
+        state.input_digit(5);
+        assert_eq!(state.display_value(), "75");
+        
+        state.set_operation(Operation::Add);
+        state.input_digit(2);
+        state.input_digit(5);
+        state.calculate();
+        
+        assert_eq!(state.display_value(), "100");
+    }
+}
+
+================
+File: tests/web.rs
+================
+//! Integration tests for the WebAssembly interface.
+//!
+//! This module contains browser-specific tests that verify the WASM bindings
+//! work correctly in a real browser environment. These tests run using
+//! wasm-bindgen-test and ensure proper JavaScript interop.
+
+use wasm_bindgen_test::*;
+use rust_wasm_calc::hello;
+use wasm_bindgen::JsValue;
+use wasm_bindgen_futures::JsFuture;
+
+wasm_bindgen_test_configure!(run_in_browser);
+
+/// Tests the basic functionality of the hello function in a browser environment.
+///
+/// This test verifies that:
+/// - The WASM module loads correctly in the browser
+/// - The hello function can be called from JavaScript
+/// - String passing between Rust and JavaScript works as expected
+///
+/// # Test Setup
+/// - Runs in a real browser environment
+/// - No special setup required
+#[wasm_bindgen_test]
+fn test_hello_in_browser() {
+    let result = hello("Browser");
+    assert_eq!(result, "Hello, Browser!");
+}
+
+/// Tests Unicode character handling in the hello function.
+///
+/// This test ensures that:
+/// - Unicode characters are properly passed between JavaScript and Rust
+/// - UTF-8 encoding is maintained through the WASM boundary
+/// - Emoji and special characters are handled correctly
+///
+/// # Test Data
+/// Uses the "🌍" (world emoji) as a test case for Unicode support
+#[wasm_bindgen_test]
+fn test_hello_unicode() {
+    let result = hello("🌍");
+    assert_eq!(result, "Hello, 🌍!");
+}
+
+/// Tests multiple sequential calls to the hello function.
+///
+/// This test verifies that:
+/// - The function maintains no internal state
+/// - Multiple calls work consistently
+/// - No memory leaks occur between calls
+///
+/// # Test Methodology
+/// Makes three sequential calls with different inputs to ensure
+/// each call is independent and produces the expected result.
+#[wasm_bindgen_test]
+fn test_multiple_hellos() {
+    assert_eq!(hello("First"), "Hello, First!");
+    assert_eq!(hello("Second"), "Hello, Second!");
+    assert_eq!(hello("Third"), "Hello, Third!");
+}
+
+/// Tests the handling of empty string input.
+///
+/// This test verifies that:
+/// - Empty strings are handled gracefully
+/// - No panics occur with zero-length input
+/// - The function returns a valid greeting
+#[wasm_bindgen_test]
+fn test_empty_string() {
+    let result = hello("");
+    assert_eq!(result, "Hello, !");
+}
+
+/// Tests the handling of very long string input.
+///
+/// This test ensures that:
+/// - Large strings don't cause memory issues
+/// - WASM memory allocation works correctly
+/// - String concatenation works with large inputs
+///
+/// # Test Data
+/// Uses a string of 10,000 characters
+#[wasm_bindgen_test]
+fn test_long_string() {
+    let long_input = "a".repeat(10_000);
+    let result = hello(&long_input);
+    assert!(result.starts_with("Hello, "));
+    assert!(result.ends_with("!"));
+    assert_eq!(result.len(), long_input.len() + 8); // "Hello, " + input + "!"
+}
+
+/// Tests special characters and edge cases.
+///
+/// This test verifies handling of:
+/// - Special characters
+/// - Control characters
+/// - Whitespace
+/// - Mixed Unicode and ASCII
+#[wasm_bindgen_test]
+fn test_special_characters() {
+    let inputs = [
+        "\n\t\r",                    // Control characters
+        "    ",                      // Whitespace
+        "Hello\u{0000}World",        // Null character
+        "🌍\u{1F600}⚡️\n123",       // Mixed Unicode
+    ];
+
+    for input in inputs {
+        let result = hello(input);
+        assert!(result.starts_with("Hello, "));
+        assert!(result.ends_with("!"));
+    }
+}
+
+/// Tests concurrent execution of the hello function.
+///
+/// This test ensures that:
+/// - Multiple calls can be made concurrently
+/// - No race conditions occur
+/// - Memory is properly managed in concurrent scenarios
+///
+/// # Note
+/// Uses async/await for concurrent execution
+#[wasm_bindgen_test]
+async fn test_concurrent_calls() {
+    use wasm_bindgen_futures::spawn_local;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let counter = Arc::new(AtomicUsize::new(0));
+    let mut handles = vec![];
+
+    for i in 0..5 {
+        let counter = counter.clone();
+        let handle = spawn_local(async move {
+            let result = hello(&format!("Concurrent{}", i));
+            assert_eq!(result, format!("Hello, Concurrent{}!", i));
+            counter.fetch_add(1, Ordering::SeqCst);
+        });
+        handles.push(handle);
+    }
+
+    // Wait for all tests to complete
+    for _ in 0..5 {
+        while counter.load(Ordering::SeqCst) < 5 {
+            wasm_bindgen_futures::JsFuture::from(js_sys::Promise::new(&mut |_resolve, _reject| {}))
+                .await
+                .unwrap();
+        }
+    }
+
+    assert_eq!(counter.load(Ordering::SeqCst), 5);
+}
+
+================
+File: .gitignore
+================
+# Added by cargo
+
+# Generated by Cargo
+/target/
+/pkg/
+
+# Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
+Cargo.lock
+
+# These are backup files generated by rustfmt
+**/*.rs.bk
+
+# Node.js dependencies
+/node_modules/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+.cursorrules
+.repomix-output.txt
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Repomix output
+local-docs/
+
+================
+File: .repomixignore
+================
+# Add patterns to ignore here, one per line
+# Example:
+# *.log
+# tmp/
+
+================
+File: Cargo.toml
+================
+[package]
+name = "rust-wasm-calc"
+version = "0.1.0"
+edition = "2021"
+description = "A WebAssembly calculator built with Rust"
+authors = ["Jay Singh <gsinghjay@gmail.com>"]
+repository = "https://github.com/gsinghjay/rust-wasm-calc"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+console_error_panic_hook = { version = "0.1", optional = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+futures = "0.3"
+js-sys = "0.3"
+wasm-bindgen-futures = "0.4"
+
+[features]
+default = ["console_error_panic_hook"]
+
+================
+File: CHANGELOG.md
+================
+# CHANGELOG
+
+
+## v0.1.0 (2025-02-13)
+
+### Chores
+
+- **config**: Initialize project configuration
+  ([`aa24d5b`](https://github.com/gsinghjay/rust-wasm-calc/commit/aa24d5ba8225e43930093dcf71ca7420ee22e894))
+
+- Add Cargo.toml with WASM dependencies - Configure .gitignore for Rust and WASM
+
+### Documentation
+
+- Add project documentation
+  ([`c6afbae`](https://github.com/gsinghjay/rust-wasm-calc/commit/c6afbae44f135e034d39ef3f09ce086d24b2d736))
+
+- Add comprehensive README with project structure and roadmap - Include MIT license
+
+- Update project documentation
+  ([`9daec22`](https://github.com/gsinghjay/rust-wasm-calc/commit/9daec22697a79478b15a50ed15b699e93e9d0f62))
+
+- Add Bootstrap implementation details - Update development roadmap - Add UI component documentation
+  - Update testing instructions - Add theme system documentation
+
+- **research**: Add project research materials
+  ([`b3cde26`](https://github.com/gsinghjay/rust-wasm-calc/commit/b3cde26388e9d8068c39d23ca68d85dfc622d4a9))
+
+- Add WASM development best practices - Include TDD approach documentation
+
+### Features
+
+- **core**: Implement initial WASM hello world
+  ([`6b57036`](https://github.com/gsinghjay/rust-wasm-calc/commit/6b57036d2060874f94043f706bed52acc1e42958))
+
+- Add basic WASM bindings - Implement hello world function - Include unit tests
+
+- **ui**: Add web interface
+  ([`a493070`](https://github.com/gsinghjay/rust-wasm-calc/commit/a49307046a4b8260d69f698b7d916e975e8d7839))
+
+- Create responsive web interface - Add WASM module loading - Implement error handling
+
+- **ui**: Implement Bootstrap calculator interface
+  ([`60e7867`](https://github.com/gsinghjay/rust-wasm-calc/commit/60e7867f9b3521a57d35f6898d70c21406c6d31c))
+
+- Add Bootstrap 5.3.0 with square design - Implement dark/light theme toggle - Add calculator button
+  layout - Add memory operation buttons - Use Bootstrap Icons
+
+### Refactoring
+
+- **core**: Update WASM initialization
+  ([`390f87e`](https://github.com/gsinghjay/rust-wasm-calc/commit/390f87ebfabc66c82fa270e3a7a2de72178bf0ca))
+
+- Remove wee_alloc feature - Update display initialization - Clean up test configuration
+
+### Testing
+
+- **integration**: Add browser integration tests
+  ([`86186ad`](https://github.com/gsinghjay/rust-wasm-calc/commit/86186ad5ce504a0e56ed022b8be63506a9f8bc77))
+
+- Add Unicode support tests - Add multiple call tests - Configure browser test environment
+
+================
+File: custom.css
+================
+/* Custom styles for WASM Calculator */
+
+.calculator-container {
+    max-width: 400px;
+    margin: auto;
+}
+
+/* Remove rounded corners from calculator elements */
+.calculator-container .card,
+.calculator-container .card-header,
+.calculator-container .btn,
+.calculator-container #display {
+    border-radius: 0 !important;
+}
+
+.btn-calc {
+    min-width: 60px;
+    height: 60px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-calc:active {
+    transform: scale(0.95);
+}
+
+#display {
+    font-family: 'Roboto Mono', monospace;
+    height: 80px;
+    font-size: 2rem;
+    text-align: right;
+    padding: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+/* Add a subtle shadow to the calculator */
+.calculator-container .card {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Improve button styling */
+.btn-light {
+    background-color: #f8f9fa;
+    border-color: #f8f9fa;
+}
+
+.btn-light:hover {
+    background-color: #e9ecef;
+    border-color: #e9ecef;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Add keyboard shortcut styling */
+kbd {
+    background-color: #f8f9fa;
+    color: #495057;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.2rem;
+    border: 1px solid #ced4da;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+    font-size: 0.8rem;
+}
+
+/* Add error state styling */
+#display.error {
+    color: #dc3545;
+}
+
+================
+File: index.html
+================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rust WASM Calculator</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="custom.css" rel="stylesheet">
+</head>
+<body class="bg-light min-vh-100 d-flex align-items-center py-5">
+    <div class="container">
+        <div class="calculator-container">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>WASM Calculator</h5>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="display" class="bg-light border-bottom">
+                        Loading WASM...
+                    </div>
+                    <div class="p-3">
+                        <div class="row g-2">
+                            <!-- Memory Operations -->
+                            <div class="col-3">
+                                <button class="btn btn-secondary w-100 btn-calc">MC</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-secondary w-100 btn-calc">MR</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-secondary w-100 btn-calc">M+</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-secondary w-100 btn-calc">M-</button>
+                            </div>
+                            
+                            <!-- Clear and Operations -->
+                            <div class="col-6">
+                                <button class="btn btn-danger w-100 btn-calc">C</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-danger w-100 btn-calc">CE</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-primary w-100 btn-calc">/</button>
+                            </div>
+                            
+                            <!-- Numbers and Operations -->
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">7</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">8</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">9</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-primary w-100 btn-calc">×</button>
+                            </div>
+                            
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">4</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">5</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">6</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-primary w-100 btn-calc">-</button>
+                            </div>
+                            
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">1</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">2</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">3</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-primary w-100 btn-calc">+</button>
+                            </div>
+                            
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">±</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">0</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-light w-100 btn-calc">.</button>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-primary w-100 btn-calc">=</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light text-center text-muted">
+                    <small>Press <kbd>Esc</kbd> to clear, <kbd>Enter</kbd> to calculate</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- WASM Module -->
+    <script type="module">
+        import init, { 
+            memory_store, 
+            memory_recall, 
+            memory_clear, 
+            memory_add, 
+            memory_subtract 
+        } from './pkg/rust_wasm_calc.js';
+        import { initCalculator } from './js/calculator.js';
+
+        // Initialize WASM
+        async function run() {
+            try {
+                const wasmModule = await init();
+                
+                // Create an object with the calculator functions
+                const calculatorFunctions = {
+                    memory_store,
+                    memory_recall,
+                    memory_clear,
+                    memory_add,
+                    memory_subtract
+                };
+                
+                // Initialize the calculator UI
+                initCalculator(calculatorFunctions);
+                
+                // Update the display to show it's ready
+                const display = document.getElementById('display');
+                display.textContent = "0";
+            } catch (e) {
+                const display = document.getElementById('display');
+                display.textContent = `Error: ${e.message}`;
+                console.error(e);
+            }
+        }
+
+        run();
+    </script>
+</body>
+</html>
+
+================
+File: LICENSE
+================
+MIT License
+
+Copyright (c) 2024 rust-wasm-calc Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================
+File: README.md
+================
+# Rust WASM Calculator
+
+[![Rust](https://img.shields.io/badge/rust-stable-brightgreen.svg)](https://www.rust-lang.org/)
+[![wasm-pack](https://img.shields.io/badge/wasm--pack-latest-blue.svg)](https://rustwasm.github.io/wasm-pack/)
+[![Bootstrap](https://img.shields.io/badge/bootstrap-5.3.0-purple.svg)](https://getbootstrap.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Overview
+
+Rust WASM Calculator is a WebAssembly calculator application. It is built using Rust and Bootstrap 5. The project follows test-driven development practices.
+
+## 🚀 Quick Start
+
+1. **Prerequisites:** Ensure you have Rust, wasm-pack, and Node.js installed.
+2. **Clone Repository:** Clone the repository to your local machine.
+   ```bash
+   git clone https://github.com/your-username/rust-wasm-calc.git # Replace with actual repo URL
+   cd rust-wasm-calc
+   ```
+3. **Build WASM:** Build the WebAssembly module.
+   ```bash
+   wasm-pack build --target web
+   ```
+4. **Start Development Server:** Run a local HTTP server to serve the application.
+   ```bash
+   npm install -g http-server # If not already installed
+   http-server . -p 8080
+   ```
+5. **Access in Browser:** Open your browser and go to `http://localhost:8080`.
+
+## 📦 Core Package: `rust-wasm-calc`
+
+### Installation
+
+The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --target web` to generate the package in the `pkg/` directory.
+
+### API
+
+#### `hello(name: &str) -> String`
+
+- **Description:**  Returns a greeting string.
+- **Parameters:**
+    - `name`:  The name to include in the greeting.
+- **Returns:**  A string formatted as "Hello, {name}!".
+
+#### `add(a: f64, b: f64) -> f64`
+
+- **Description:** Adds two numbers and returns the result.
+- **Parameters:**
+    - `a`: First operand
+    - `b`: Second operand
+- **Returns:** The sum of `a` and `b`
+
+#### `subtract(a: f64, b: f64) -> f64`
+
+- **Description:** Subtracts the second number from the first and returns the result.
+- **Parameters:**
+    - `a`: First operand
+    - `b`: Second operand
+- **Returns:** The difference `a - b`
+
+#### `multiply(a: f64, b: f64) -> f64`
+
+- **Description:** Multiplies two numbers and returns the result.
+- **Parameters:**
+    - `a`: First operand
+    - `b`: Second operand
+- **Returns:** The product of `a` and `b`
+
+#### `divide(a: f64, b: f64) -> Result<f64, String>`
+
+- **Description:** Divides the first number by the second and returns the result.
+- **Parameters:**
+    - `a`: Dividend (numerator)
+    - `b`: Divisor (denominator)
+- **Returns:** 
+    - `Ok(result)`: The quotient `a / b` if successful
+    - `Err(message)`: An error message if division by zero is attempted
+
+#### Memory Functions
+
+- **`memory_store(value: f64)`**: Stores a value in the calculator's memory
+- **`memory_recall() -> f64`**: Recalls the current value stored in memory
+- **`memory_clear()`**: Clears the calculator's memory by setting it to zero
+- **`memory_add(value: f64)`**: Adds a value to the current value stored in memory
+- **`memory_subtract(value: f64)`**: Subtracts a value from the current value stored in memory
+
+**Example Usage (JavaScript):**
+
+```javascript
+import init, { hello, add, subtract, multiply, divide, memory_store, memory_recall } from './pkg/rust_wasm_calc.js';
+
+async function run() {
+  await init();
+  
+  // Basic greeting
+  const message = hello("User");
+  console.log(message); // Output: Hello, User!
+  
+  // Calculator operations
+  console.log(add(2, 3)); // Output: 5
+  console.log(subtract(5, 3)); // Output: 2
+  console.log(multiply(2, 3)); // Output: 6
+  
+  // Division with error handling
+  try {
+    const result = divide(6, 3);
+    if (result.err) {
+      console.error(result.err);
+    } else {
+      console.log(result.ok); // Output: 2
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  
+  // Memory operations
+  memory_store(10);
+  memory_add(5);
+  console.log(memory_recall()); // Output: 15
+  memory_subtract(3);
+  console.log(memory_recall()); // Output: 12
+  memory_clear();
+  console.log(memory_recall()); // Output: 0
+}
+
+run();
+```
+
+## ⚙️ Configuration
+
+### Dependencies
+
+- **Rust:** Programming language for core logic.
+- **wasm-pack:** Tool to build Rust to WebAssembly.
+- **Node.js:**  Required for development server and potentially testing.
+- **wasm-bindgen:**  Facilitates communication between Rust and JavaScript.
+- **Bootstrap 5.3.0:**  CSS framework for user interface.
+- **Bootstrap Icons:** Icon library for UI elements.
+- **console_error_panic_hook:**  Provides improved error messages in the browser console.
+
+### Features
+
+- `default`: Enables the `console_error_panic_hook` feature. This is recommended for better debugging in browser environments.
+
+## 🧪 Advanced Usage
+
+### Running Tests
+
+- **Unit Tests (Rust):** Execute Rust unit tests.
+  ```bash
+  cargo test
+  ```
+- **WASM Tests (Node.js):** Run WASM tests in a Node.js environment.
+  ```bash
+  wasm-pack test --node
+  ```
+- **WASM Tests (Browser):** Run WASM tests in a headless browser (Chrome or Firefox).
+  ```bash
+  wasm-pack test --chrome --headless
+  wasm-pack test --firefox --headless
+  ```
+
+### Building for Production
+
+For optimized production builds, use the `--release` flag.
+
+```bash
+wasm-pack build --target web --release
+```
+
+This command creates a optimized build in the `pkg/` directory, suitable for deployment.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Rust WASM Book](https://rustwasm.github.io/docs/book/)
+- [Bootstrap Documentation](https://getbootstrap.com/docs/)
+- [wasm-bindgen Guide](https://rustwasm.github.io/docs/wasm-bindgen/)
+
+## 📊 Project Status
+
+- [x] Basic WASM project setup
+- [x] Modern Bootstrap UI layout
+- [x] Calculator button layout
+- [x] Basic project structure
+- [x] Development environment setup
+- [x] Calculator operations
+- [x] Memory functions
+- [x] Error handling
+- [ ] UI Interaction & State Management
+- [ ] LLM Chatbot Integration
+- [ ] Advanced Features & Refinement
+
+## 📚 Documentation Standards
+
+This project follows the official Rust documentation standards and conventions:
+
+- [Rust Documentation Guide](https://doc.rust-lang.org/rustdoc/how-to-write-documentation.html) - Official guide for writing documentation
+- [RFC 505: Documentation Conventions](https://rust-lang.github.io/rfcs/0505-api-comment-conventions.html) - Standard conventions for API documentation
+- [Rust Style Guide](https://doc.rust-lang.org/nightly/style-guide/) - Official Rust style guidelines
+
+### Documentation Principles
+
+1. Every public API has comprehensive documentation
+2. All documentation includes examples
+3. Comments follow the standard format:
+   ```rust
+   /// Short summary
+   ///
+   /// Detailed explanation
+   ///
+   /// # Examples
+   ///
+   /// ```rust
+   /// // Example code
+   /// ```
+   ```
+4. Module-level documentation uses `//!` comments
+5. Function and type documentation uses `///` comments
+
+================
+File: repomix.config.json
+================
+{
+  "output": {
+    "filePath": "repomix-output.txt",
+    "style": "plain",
+    "parsableStyle": false,
+    "fileSummary": true,
+    "directoryStructure": true,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "compress": false,
+    "topFilesLength": 5,
+    "showLineNumbers": false,
+    "copyToClipboard": false
+  },
+  "include": [],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": []
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "tokenCount": {
+    "encoding": "o200k_base"
+  }
+}
+
+================
+File: TASKS.md
+================
+# Rust WASM Calculator: Implementation Roadmap
+
+This roadmap outlines the development tasks to evolve the current Hello World project into a fully functional calculator with an LLM chatbot interface. Each task is sized to approximately one story point and organized to follow test-driven development practices while adhering to the existing `.mdc` file standards.
+
+## Phase 1: Core Calculator Operations
+
+- [x] **1.1 Write tests for basic calculator operations**
+  - [x] Create unit tests for addition, subtraction, multiplication, division
+  - [x] Include edge cases like division by zero
+  - [x] Follow testing.mdc guidelines for test structure
+
+- [x] **1.2 Implement addition operation**
+  - [x] Implement `add` function with proper WASM bindings
+  - [x] Document function according to documentation.mdc standards
+  - [x] Make tests pass
+
+- [x] **1.3 Implement subtraction operation**
+  - [x] Implement `subtract` function with proper WASM bindings
+  - [x] Document function according to documentation.mdc standards
+  - [x] Make tests pass
+
+- [x] **1.4 Implement multiplication operation**
+  - [x] Implement `multiply` function with proper WASM bindings
+  - [x] Document function according to documentation.mdc standards
+  - [x] Make tests pass
+
+- [x] **1.5 Implement division operation**
+  - [x] Implement `divide` function with proper WASM bindings
+  - [x] Include error handling for division by zero
+  - [x] Document function according to documentation.mdc standards
+  - [x] Make tests pass
+
+- [x] **1.6 Write tests for memory operations**
+  - [x] Create unit tests for memory store, recall, add, subtract
+  - [x] Test edge cases like recalling from empty memory
+  - [x] Follow testing.mdc guidelines
+
+- [x] **1.7 Implement memory operations**
+  - [x] Create memory functionality in Rust (store, recall, clear, add, subtract)
+  - [x] Document functions according to documentation.mdc standards
+  - [x] Make tests pass
+
+## Phase 2: UI Interaction & State Management
+
+- [ ] **2.1 Create tests for calculator state management**
+  - [ ] Write tests for tracking current input, operation, memory state
+  - [ ] Include tests for operation chaining
+  - [ ] Follow testing.mdc guidelines
+
+- [ ] **2.2 Implement calculator state management module**
+  - [ ] Create state management functionality in Rust
+  - [ ] Implement proper state transitions
+  - [ ] Document according to documentation.mdc standards
+  - [ ] Make tests pass
+
+- [ ] **2.3 Connect number buttons to input functionality**
+  - [ ] Write JavaScript to handle number button clicks
+  - [ ] Update display when numbers are entered
+  - [ ] Follow web-interface.mdc rules for JavaScript implementation
+
+- [ ] **2.4 Connect operation buttons to WASM functions**
+  - [ ] Write JavaScript to handle operation button clicks
+  - [ ] Call appropriate WASM functions based on button clicks
+  - [ ] Update display with calculation results
+  - [ ] Follow web-interface.mdc rules
+
+- [ ] **2.5 Connect memory buttons to WASM functions**
+  - [ ] Write JavaScript to handle memory button clicks
+  - [ ] Call appropriate WASM memory functions
+  - [ ] Update display accordingly
+  - [ ] Follow web-interface.mdc rules
+
+- [ ] **2.6 Implement clear and backspace functionality**
+  - [ ] Connect C/CE buttons to state reset functions
+  - [ ] Implement backspace/delete functionality
+  - [ ] Update display accordingly
+
+- [ ] **2.7 Add keyboard input support**
+  - [ ] Write tests for keyboard event handling
+  - [ ] Implement key event listeners for calculator operations
+  - [ ] Map number keys and operation keys to calculator functions
+  - [ ] Follow web-interface.mdc accessibility guidelines
+
+## Phase 3: LLM Chatbot Integration
+
+- [ ] **3.1 Add chat interface to HTML**
+  - [ ] Design and implement chat UI component
+  - [ ] Add message display area and input field
+  - [ ] Style according to existing theme
+  - [ ] Follow web-interface.mdc rules for HTML/CSS
+
+- [ ] **3.2 Write tests for LLM function calling interface**
+  - [ ] Create tests for function definitions
+  - [ ] Test message processing
+  - [ ] Test function call handling
+  - [ ] Follow testing.mdc rules
+
+- [ ] **3.3 Create JavaScript module for LLM integration**
+  - [ ] Implement calculator function definitions
+  - [ ] Set up message and conversation handling
+  - [ ] Document according to js/**.js rules in documentation.mdc
+
+- [ ] **3.4 Implement API connection to chosen LLM**
+  - [ ] Set up API call structure
+  - [ ] Implement authentication
+  - [ ] Create error handling for API failures
+  - [ ] Follow web-interface.mdc rules
+
+- [ ] **3.5 Write function call handler**
+  - [ ] Implement parser for LLM function calls
+  - [ ] Create bridge between LLM responses and calculator API
+  - [ ] Add error handling for malformed function calls
+
+- [ ] **3.6 Connect chat UI to LLM module**
+  - [ ] Implement send button functionality
+  - [ ] Display user and assistant messages
+  - [ ] Show calculation results in both chat and calculator display
+
+- [ ] **3.7 Implement conversation history management**
+  - [ ] Create storage for chat history
+  - [ ] Add method to update and retrieve conversation context
+  - [ ] Ensure context is properly passed to LLM API
+
+## Phase 4: Advanced Features & Refinement
+
+- [ ] **4.1 Add support for complex expressions**
+  - [ ] Write tests for parsing mathematical expressions
+  - [ ] Implement expression parser in Rust
+  - [ ] Expose parser through WASM bindings
+  - [ ] Update UI to show expression evaluation
+
+- [ ] **4.2 Implement history functionality**
+  - [ ] Create a calculation history component
+  - [ ] Store previous calculations and results
+  - [ ] Add UI to view and reuse past calculations
+
+- [ ] **4.3 Add formula recognition to LLM**
+  - [ ] Extend function definitions to support formula calculations
+  - [ ] Implement area, volume, and other common formulas
+  - [ ] Create tests for formula recognition
+
+- [ ] **4.4 Implement explanation mode**
+  - [ ] Add function to explain calculation steps
+  - [ ] Create UI toggle for explanation mode
+  - [ ] Connect LLM responses to explanation display
+
+- [ ] **4.5 Add theming and accessibility improvements**
+  - [ ] Implement dark/light mode toggle
+  - [ ] Ensure proper contrast ratios
+  - [ ] Add keyboard shortcuts
+  - [ ] Follow web-interface.mdc accessibility guidelines
+
+- [ ] **4.6 Create loading states and error handling UI**
+  - [ ] Add loading indicators for WASM operations
+  - [ ] Implement error messages for calculation errors
+  - [ ] Create friendly error responses for LLM failures
+
+- [ ] **4.7 Optimize bundle size and performance**
+  - [ ] Run wasm-opt on WASM output
+  - [ ] Implement code splitting for JavaScript
+  - [ ] Add performance tests for critical operations
+  - [ ] Follow rust-wasm.mdc optimization guidelines
+
+- [ ] **4.8 Add comprehensive documentation**
+  - [ ] Update README with chatbot functionality
+  - [ ] Document API changes
+  - [ ] Create usage examples
+  - [ ] Follow documentation.mdc standards
+
+- [ ] **4.9 Final integration testing**
+  - [ ] Create end-to-end tests for calculator and chatbot
+  - [ ] Test all operations through both UI and chat interface
+  - [ ] Verify error handling across all components
+  - [ ] Follow testing.mdc guidelines for integration tests
+
+## Notes
+
+- Each task follows test-driven development: write tests first, then implement
+- All implementations should adhere to the guidelines in the respective .mdc files
+- Tasks build incrementally on previous tasks
+- Checkboxes can be used to track progress on each task and subtask
+
+
+
+================================================================
+End of Codebase
+================================================================
