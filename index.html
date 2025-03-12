@@ -11,107 +11,223 @@
     <!-- Custom CSS -->
     <link href="custom.css" rel="stylesheet">
 </head>
-<body class="bg-light min-vh-100 d-flex align-items-center py-5">
-    <div class="container">
-        <div class="calculator-container">
-            <div class="card shadow">
-                <div class="card-header bg-dark text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>WASM Calculator</h5>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Sticky Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="bi bi-calculator me-2"></i>Rust WASM Calculator</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#landing">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#calculator">Calculator</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#chatbot">Chatbot</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow-1">
+        <!-- Landing Page -->
+        <section id="landing" class="py-5 bg-light">
+            <div class="container text-center">
+                <h1 class="display-4 mb-4">Welcome to Rust WASM Calculator</h1>
+                <p class="lead mb-5">Choose your preferred way to calculate</p>
+                
+                <div class="row justify-content-center g-4">
+                    <div class="col-md-5">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-calculator display-1 mb-3 text-primary"></i>
+                                <h3>Calculator Interface</h3>
+                                <p class="mb-4">Use our traditional calculator interface with keyboard support</p>
+                                <a href="#calculator" class="btn btn-primary">Open Calculator</a>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="card-body p-0">
-                    <div id="display" class="bg-light border-bottom">
-                        Loading WASM...
-                    </div>
-                    <div class="p-3">
-                        <div class="row g-2">
-                            <!-- Memory Operations -->
-                            <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">MC</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">MR</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">M+</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">M-</button>
-                            </div>
-                            
-                            <!-- Clear and Operations -->
-                            <div class="col-6">
-                                <button class="btn btn-danger w-100 btn-calc">C</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-danger w-100 btn-calc">CE</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">/</button>
-                            </div>
-                            
-                            <!-- Numbers and Operations -->
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">7</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">8</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">9</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">×</button>
-                            </div>
-                            
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">4</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">5</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">6</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">-</button>
-                            </div>
-                            
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">1</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">2</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">3</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">+</button>
-                            </div>
-                            
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">±</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">0</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">.</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-success w-100 btn-calc">=</button>
+                    <div class="col-md-5">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-chat-dots display-1 mb-3 text-success"></i>
+                                <h3>Chatbot Interface</h3>
+                                <p class="mb-4">Chat with our LLM-powered calculator assistant</p>
+                                <a href="#chatbot" class="btn btn-success">Open Chatbot</a>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer text-center text-muted">
-                    <small>Press <kbd>Esc</kbd> to clear, <kbd>Enter</kbd> to calculate</small>
+            </div>
+        </section>
+
+        <!-- Calculator Section -->
+        <section id="calculator" class="py-5 d-none">
+            <div class="container">
+                <div class="calculator-container">
+                    <div class="card shadow">
+                        <div class="card-header bg-dark text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>WASM Calculator</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="display" class="bg-light border-bottom">
+                                Loading WASM...
+                            </div>
+                            <div class="p-3">
+                                <div class="row g-2">
+                                    <!-- Memory Operations -->
+                                    <div class="col-3">
+                                        <button class="btn btn-secondary w-100 btn-calc">MC</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-secondary w-100 btn-calc">MR</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-secondary w-100 btn-calc">M+</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-secondary w-100 btn-calc">M-</button>
+                                    </div>
+                                    
+                                    <!-- Clear and Operations -->
+                                    <div class="col-6">
+                                        <button class="btn btn-danger w-100 btn-calc">C</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-danger w-100 btn-calc">CE</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-calc">/</button>
+                                    </div>
+                                    
+                                    <!-- Numbers and Operations -->
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">7</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">8</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">9</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-calc">×</button>
+                                    </div>
+                                    
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">4</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">5</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">6</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-calc">-</button>
+                                    </div>
+                                    
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">1</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">2</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">3</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-calc">+</button>
+                                    </div>
+                                    
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">±</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">0</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">.</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-success w-100 btn-calc">=</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center text-muted">
+                            <small>Press <kbd>Esc</kbd> to clear, <kbd>Enter</kbd> to calculate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chatbot Section -->
+        <section id="chatbot" class="py-5 d-none">
+            <div class="container">
+                <div class="chat-container">
+                    <div class="card shadow">
+                        <div class="card-header bg-dark text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Calculator Assistant</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="chat-messages" class="chat-messages">
+                                <div class="message assistant">
+                                    <div class="message-content">
+                                        <p>Hello! I'm your calculator assistant. Ask me to perform calculations or help with math problems.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-input-container">
+                                <form id="chat-form" class="d-flex">
+                                    <input type="text" id="chat-input" class="form-control" placeholder="Type your calculation or question..." aria-label="Message">
+                                    <button type="submit" class="btn btn-success ms-2">
+                                        <i class="bi bi-send"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Try asking: "Calculate 125 × 37" or "What's the area of a circle with radius 5?"</small>
+                                <div id="chat-status" class="text-success">
+                                    <small><i class="bi bi-check-circle"></i> Ready</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Sticky Footer -->
+    <footer class="bg-dark text-white py-3 mt-auto">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; 2023 Rust WASM Calculator</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="https://github.com/your-repo/rust-wasm-calc" class="text-white text-decoration-none" target="_blank">
+                        <i class="bi bi-github me-1"></i> View on GitHub
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
+    </footer>
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -126,6 +242,8 @@
             memory_subtract 
         } from './pkg/rust_wasm_calc.js';
         import { initCalculator } from './js/calculator.js';
+        import { initChatbot } from './js/chatbot.js';
+        import { initNavigation } from './js/navigation.js';
 
         // Initialize WASM
         async function run() {
@@ -144,6 +262,12 @@
                 
                 // Initialize the calculator UI
                 initCalculator(calculatorFunctions);
+                
+                // Initialize the chatbot UI
+                initChatbot(calculatorFunctions);
+                
+                // Initialize navigation
+                initNavigation();
             } catch (e) {
                 const display = document.getElementById('display');
                 display.textContent = `Error: ${e.message}`;

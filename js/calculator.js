@@ -35,7 +35,8 @@ export function initCalculator(wasmFunctions) {
   
   // Bind events
   bindButtonEvents(calculator);
-  bindKeyboardEvents(calculator);
+  // Completely disabling keyboard events to prevent interference with chatbot input
+  // bindKeyboardEvents(calculator);
   addBackspaceButton(calculator);
   
   return calculator;

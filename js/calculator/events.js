@@ -49,9 +49,13 @@ export function bindButtonEvents(calculator) {
  * @param {Object} calculator - The calculator controller instance
  */
 export function bindKeyboardEvents(calculator) {
-  document.addEventListener('keydown', (event) => {
-    calculator.handleKeyDown(event);
-  });
+  // Disabled to prevent interference with chatbot input
+  // document.addEventListener('keydown', (event) => {
+  //   calculator.handleKeyDown(event);
+  // });
+  
+  // This function is now a no-op
+  console.log('Keyboard events for calculator are disabled');
 }
 
 /**
