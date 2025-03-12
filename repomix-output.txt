@@ -49,7 +49,14 @@ Directory Structure
   workflows/
     semantic-release.yml
 js/
+  calculator/
+    controller.js
+    display.js
+    events.js
+    memory.js
   calculator.js
+  chatbot.js
+  navigation.js
 lessons/
   enhanced-tutorial-series.md
   tutorial-series.md
@@ -58,12 +65,28 @@ local-research/
   rust-wasm-tdd.md
   rust-wasm-testing.md
 src/
+  calculator/
+    memory.rs
+    mod.rs
+    operations.rs
+  state/
+    mod.rs
+    operations.rs
+    types.rs
+  errors.rs
   lib.rs
-  state.rs
 tests/
+  calculator/
+    memory_tests.rs
+    operations_tests.rs
+  state/
+    mod.rs
+    operations_tests.rs
+    types_tests.rs
   web.rs
 .gitignore
 .repomixignore
+ARCHITECTURE.md
 Cargo.toml
 CHANGELOG.md
 custom.css
@@ -71,6 +94,7 @@ index.html
 LICENSE
 README.md
 repomix.config.json
+TASKS_REFACTOR.md
 TASKS.md
 
 ================================================================
@@ -106,16 +130,16 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
 ================
-File: js/calculator.js
+File: js/calculator/controller.js
 ================
 /**
- * Calculator UI interaction module
+ * Calculator Controller Module
  * 
- * This module handles the interaction between the UI and the WASM calculator.
- * It connects button clicks to WASM functions and updates the display.
+ * This module contains the CalculatorController class which manages the
+ * interaction between the UI and the WASM calculator state.
  */
 
-import { CalculatorState, Operation } from '../pkg/rust_wasm_calc.js';
+import { CalculatorState, Operation } from '../../pkg/rust_wasm_calc.js';
 
 /**
  * Calculator controller class
@@ -138,7 +162,7 @@ export class CalculatorController {
    * Updates the display with the current calculator state
    */
   updateDisplay() {
-    this.displayElement.textContent = this.state.display_value;
+    this.displayElement.textContent = this.state.display_value();
   }
 
   /**
@@ -166,6 +190,8 @@ export class CalculatorController {
    */
   handleOperation(op) {
     let operation;
+    
+    // Map the button symbol to the Operation enum
     switch (op) {
       case '+':
         operation = Operation.Add;
@@ -180,6 +206,7 @@ export class CalculatorController {
         operation = Operation.Divide;
         break;
       default:
+        console.error(`Unknown operation: ${op}`);
         return;
     }
     
@@ -231,135 +258,205 @@ export class CalculatorController {
    * Handles memory store button click
    */
   handleMemoryStore() {
-    const value = parseFloat(this.state.display_value);
-    if (!isNaN(value)) {
-      window.memory_store(value);
-    }
+    // Get the current display value as a number
+    const value = parseFloat(this.state.display_value());
+    
+    // Store it in memory
+    window.memory_store(value);
   }
 
   /**
    * Handles memory recall button click
    */
   handleMemoryRecall() {
-    this.state.clear();
+    // Clear the current state
+    this.state.clear_entry();
+    
+    // Get the value from memory
     const value = window.memory_recall();
-    // Format the value to avoid unnecessary decimal places
-    if (value === Math.floor(value)) {
-      this.displayElement.textContent = Math.floor(value).toString();
-    } else {
-      this.displayElement.textContent = value.toString();
-    }
+    
+    // Set the display to show the memory value
+    this.displayElement.textContent = value.toString();
   }
 
   /**
    * Handles memory add button click
    */
   handleMemoryAdd() {
-    const value = parseFloat(this.state.display_value);
-    if (!isNaN(value)) {
-      window.memory_add(value);
-    }
+    // Get the current display value as a number
+    const value = parseFloat(this.state.display_value());
+    
+    // Add it to memory
+    window.memory_add(value);
   }
 
   /**
    * Handles memory subtract button click
    */
   handleMemorySubtract() {
-    const value = parseFloat(this.state.display_value);
-    if (!isNaN(value)) {
-      window.memory_subtract(value);
-    }
+    // Get the current display value as a number
+    const value = parseFloat(this.state.display_value());
+    
+    // Subtract it from memory
+    window.memory_subtract(value);
   }
 
   /**
    * Handles memory clear button click
    */
   handleMemoryClear() {
+    // Clear the memory
     window.memory_clear();
   }
 
   /**
-   * Handles keyboard input
+   * Handles keyboard events
    * 
    * @param {KeyboardEvent} event - The keyboard event
-   * @returns {boolean} - Whether the key was handled
    */
   handleKeyDown(event) {
-    // Prevent default behavior for calculator keys
-    let handled = true;
-
-    switch (event.key) {
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-        this.handleDigit(parseInt(event.key, 10));
-        break;
-      case '.':
-        this.handleDecimal();
-        break;
-      case '+':
-        this.handleOperation('+');
-        break;
-      case '-':
-        this.handleOperation('-');
-        break;
-      case '*':
-      case 'x':
-      case '×':
-        this.handleOperation('×');
-        break;
-      case '/':
-        this.handleOperation('/');
-        break;
-      case '=':
-      case 'Enter':
-        this.handleEquals();
-        break;
-      case 'Escape':
-        this.handleClear();
-        break;
-      case 'Delete':
-        this.handleClearEntry();
-        break;
-      case 'Backspace':
-        this.handleBackspace();
-        break;
-      default:
-        handled = false;
+    // Completely disabled to prevent interference with chatbot input
+    return;
+    
+    /* Original implementation:
+    // Only handle keyboard events when the calculator section is active
+    const calculatorSection = document.getElementById('calculator');
+    if (calculatorSection && calculatorSection.classList.contains('d-none')) {
+      return; // Calculator is not visible, don't handle keyboard events
     }
-
-    if (handled) {
+    
+    // Don't handle keyboard events if the focus is on an input element
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      return;
+    }
+    
+    // Prevent default behavior for calculator keys
+    if (
+      (event.key >= '0' && event.key <= '9') ||
+      event.key === '.' ||
+      event.key === '+' ||
+      event.key === '-' ||
+      event.key === '*' ||
+      event.key === '/' ||
+      event.key === 'Enter' ||
+      event.key === 'Escape' ||
+      event.key === 'Backspace'
+    ) {
       event.preventDefault();
     }
-
-    return handled;
+    
+    // Handle different key presses
+    if (event.key >= '0' && event.key <= '9') {
+      this.handleDigit(parseInt(event.key, 10));
+    } else if (event.key === '.') {
+      this.handleDecimal();
+    } else if (event.key === '+') {
+      this.handleOperation('+');
+    } else if (event.key === '-') {
+      this.handleOperation('-');
+    } else if (event.key === '*') {
+      this.handleOperation('×');
+    } else if (event.key === '/') {
+      this.handleOperation('/');
+    } else if (event.key === 'Enter' || event.key === '=') {
+      this.handleEquals();
+    } else if (event.key === 'Escape') {
+      this.handleClear();
+    } else if (event.key === 'Backspace') {
+      this.handleBackspace();
+    }
+    */
   }
 }
 
+================
+File: js/calculator/display.js
+================
 /**
- * Initializes the calculator UI
+ * Calculator Display Module
  * 
- * @param {Object} wasmModule - The WASM module containing calculator functions
+ * This module handles the display formatting and updates for the calculator UI.
  */
-export function initCalculator(wasmModule) {
-  const display = document.getElementById('display');
-  const calculator = new CalculatorController(display);
 
-  // Expose memory functions globally for the controller to use
-  window.memory_store = wasmModule.memory_store;
-  window.memory_recall = wasmModule.memory_recall;
-  window.memory_clear = wasmModule.memory_clear;
-  window.memory_add = wasmModule.memory_add;
-  window.memory_subtract = wasmModule.memory_subtract;
+/**
+ * Gets the display element from the DOM
+ * 
+ * @returns {HTMLElement} The display element
+ */
+export function getDisplayElement() {
+  return document.getElementById('display');
+}
 
-  // Set up button click handlers
+/**
+ * Formats a number for display
+ * 
+ * @param {number|string} value - The value to format
+ * @returns {string} The formatted value
+ */
+export function formatDisplayValue(value) {
+  // If it's already a string, return it (likely an error message)
+  if (typeof value === 'string' && isNaN(parseFloat(value))) {
+    return value;
+  }
+  
+  // Convert to number if it's a string
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  // Check if it's a whole number
+  if (Number.isInteger(numValue)) {
+    return numValue.toString();
+  }
+  
+  // Format floating point numbers
+  return numValue.toString();
+}
+
+/**
+ * Updates the display with a new value
+ * 
+ * @param {HTMLElement} displayElement - The display element
+ * @param {string|number} value - The value to display
+ */
+export function updateDisplay(displayElement, value) {
+  displayElement.textContent = formatDisplayValue(value);
+}
+
+/**
+ * Sets the display to show an error message
+ * 
+ * @param {HTMLElement} displayElement - The display element
+ * @param {string} message - The error message
+ */
+export function showError(displayElement, message) {
+  displayElement.textContent = `Error: ${message}`;
+  displayElement.classList.add('error');
+}
+
+/**
+ * Clears any error state from the display
+ * 
+ * @param {HTMLElement} displayElement - The display element
+ */
+export function clearError(displayElement) {
+  displayElement.classList.remove('error');
+}
+
+================
+File: js/calculator/events.js
+================
+/**
+ * Calculator Events Module
+ * 
+ * This module handles event binding and delegation for the calculator UI.
+ * It connects DOM events to the calculator controller methods.
+ */
+
+/**
+ * Binds click events to calculator buttons
+ * 
+ * @param {Object} calculator - The calculator controller instance
+ */
+export function bindButtonEvents(calculator) {
   document.querySelectorAll('.btn-calc').forEach(button => {
     button.addEventListener('click', () => {
       const text = button.textContent;
@@ -390,12 +487,29 @@ export function initCalculator(wasmModule) {
       }
     });
   });
+}
 
-  // Set up keyboard event handling
-  document.addEventListener('keydown', (event) => {
-    calculator.handleKeyDown(event);
-  });
+/**
+ * Binds keyboard events to the calculator
+ * 
+ * @param {Object} calculator - The calculator controller instance
+ */
+export function bindKeyboardEvents(calculator) {
+  // Disabled to prevent interference with chatbot input
+  // document.addEventListener('keydown', (event) => {
+  //   calculator.handleKeyDown(event);
+  // });
+  
+  // This function is now a no-op
+  console.log('Keyboard events for calculator are disabled');
+}
 
+/**
+ * Creates and adds a backspace button to the calculator UI
+ * 
+ * @param {Object} calculator - The calculator controller instance
+ */
+export function addBackspaceButton(calculator) {
   // Add a backspace button
   const backspaceButton = document.createElement('button');
   backspaceButton.className = 'btn btn-secondary w-100 btn-calc';
@@ -414,8 +528,450 @@ export function initCalculator(wasmModule) {
     // Insert after CE button
     clearEntryButton.parentNode.parentNode.insertBefore(backspaceCol, clearEntryButton.parentNode.nextSibling);
   }
+}
 
+================
+File: js/calculator/memory.js
+================
+/**
+ * Calculator Memory Module
+ * 
+ * This module handles memory operations for the calculator.
+ * It provides a clean interface to the WASM memory functions.
+ */
+
+/**
+ * Initializes the memory module with WASM functions
+ * 
+ * @param {Object} wasmFunctions - Object containing WASM memory functions
+ * @returns {Object} Memory operations interface
+ */
+export function initMemory(wasmFunctions) {
+  const { memory_store, memory_recall, memory_clear, memory_add, memory_subtract } = wasmFunctions;
+  
+  return {
+    /**
+     * Stores a value in memory
+     * 
+     * @param {number} value - The value to store
+     */
+    store(value) {
+      memory_store(value);
+    },
+    
+    /**
+     * Recalls the current value from memory
+     * 
+     * @returns {number} The current memory value
+     */
+    recall() {
+      return memory_recall();
+    },
+    
+    /**
+     * Clears the memory
+     */
+    clear() {
+      memory_clear();
+    },
+    
+    /**
+     * Adds a value to memory
+     * 
+     * @param {number} value - The value to add
+     */
+    add(value) {
+      memory_add(value);
+    },
+    
+    /**
+     * Subtracts a value from memory
+     * 
+     * @param {number} value - The value to subtract
+     */
+    subtract(value) {
+      memory_subtract(value);
+    }
+  };
+}
+
+================
+File: js/calculator.js
+================
+/**
+ * Calculator UI main module
+ * 
+ * This module initializes the calculator UI and connects it to the WASM backend.
+ * It serves as the entry point for the calculator application.
+ */
+
+import { CalculatorController } from './calculator/controller.js';
+import { bindButtonEvents, bindKeyboardEvents, addBackspaceButton } from './calculator/events.js';
+import { getDisplayElement } from './calculator/display.js';
+import { initMemory } from './calculator/memory.js';
+
+/**
+ * Initializes the calculator with WASM functions
+ * 
+ * @param {Object} wasmFunctions - Object containing WASM calculator functions
+ * @returns {Object} The calculator controller instance
+ */
+export function initCalculator(wasmFunctions) {
+  // Initialize memory module
+  const memory = initMemory(wasmFunctions);
+  
+  // Make memory functions available globally for the controller
+  window.memory_store = memory.store;
+  window.memory_recall = memory.recall;
+  window.memory_clear = memory.clear;
+  window.memory_add = memory.add;
+  window.memory_subtract = memory.subtract;
+  
+  // Get the display element
+  const display = getDisplayElement();
+  
+  // Create the calculator controller
+  const calculator = new CalculatorController(display);
+  
+  // Bind events
+  bindButtonEvents(calculator);
+  // Completely disabling keyboard events to prevent interference with chatbot input
+  // bindKeyboardEvents(calculator);
+  addBackspaceButton(calculator);
+  
   return calculator;
+}
+
+================
+File: js/chatbot.js
+================
+/**
+ * Chatbot module for the Rust WASM Calculator
+ * Handles chat interface and integration with calculator functions
+ */
+
+/**
+ * Initialize the chatbot functionality
+ * @param {Object} calculatorFunctions - Object containing WASM calculator functions
+ */
+export function initChatbot(calculatorFunctions) {
+    // DOM elements
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatStatus = document.getElementById('chat-status');
+    
+    // Chat history for context
+    let chatHistory = [];
+    
+    /**
+     * Add a message to the chat interface
+     * @param {string} content - The message content
+     * @param {string} role - The role of the message sender ('user' or 'assistant')
+     */
+    function addMessage(content, role) {
+        // Create message elements
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', role);
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.classList.add('message-content');
+        
+        const paragraph = document.createElement('p');
+        paragraph.textContent = content;
+        
+        // Assemble message
+        contentDiv.appendChild(paragraph);
+        messageDiv.appendChild(contentDiv);
+        
+        // Add to chat
+        chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Add to history
+        chatHistory.push({ role, content });
+        
+        // Limit history length
+        if (chatHistory.length > 10) {
+            chatHistory.shift();
+        }
+    }
+    
+    /**
+     * Process a user message and generate a response
+     * @param {string} message - The user's message
+     */
+    async function processMessage(message) {
+        // Set status to processing
+        setStatus('processing');
+        
+        try {
+            // For now, we'll implement a simple pattern matching system
+            // In Phase 3, this will be replaced with actual LLM integration
+            
+            // Simple calculation pattern: "calculate X operator Y"
+            const calcPattern = /calculate\s+(-?\d+\.?\d*)\s*([+\-*/×÷])\s*(-?\d+\.?\d*)/i;
+            const calcMatch = message.match(calcPattern);
+            
+            if (calcMatch) {
+                const num1 = parseFloat(calcMatch[1]);
+                const operator = calcMatch[2];
+                const num2 = parseFloat(calcMatch[3]);
+                
+                let result;
+                
+                // Perform calculation
+                switch (operator) {
+                    case '+':
+                        result = num1 + num2;
+                        break;
+                    case '-':
+                        result = num1 - num2;
+                        break;
+                    case '*':
+                    case '×':
+                        result = num1 * num2;
+                        break;
+                    case '/':
+                    case '÷':
+                        if (num2 === 0) {
+                            addMessage("I can't divide by zero!", 'assistant');
+                            setStatus('ready');
+                            return;
+                        }
+                        result = num1 / num2;
+                        break;
+                    default:
+                        addMessage("I don't understand that operator.", 'assistant');
+                        setStatus('ready');
+                        return;
+                }
+                
+                // Format the result
+                const formattedResult = Number.isInteger(result) ? result.toString() : result.toFixed(4).replace(/\.?0+$/, '');
+                
+                // Respond with the result
+                addMessage(`The result of ${num1} ${operator} ${num2} is ${formattedResult}`, 'assistant');
+                
+                // Update calculator display if it's visible
+                const display = document.getElementById('display');
+                if (display && !display.closest('section').classList.contains('d-none')) {
+                    display.textContent = formattedResult;
+                }
+            } 
+            // Memory store pattern
+            else if (/store\s+(-?\d+\.?\d*)\s+in\s+memory/i.test(message)) {
+                const match = message.match(/store\s+(-?\d+\.?\d*)\s+in\s+memory/i);
+                const value = parseFloat(match[1]);
+                
+                // Call WASM function
+                calculatorFunctions.memory_store(value);
+                
+                addMessage(`I've stored ${value} in memory.`, 'assistant');
+            }
+            // Memory recall pattern
+            else if (/recall\s+memory|what\'s\s+in\s+memory/i.test(message)) {
+                // Call WASM function
+                const value = calculatorFunctions.memory_recall();
+                
+                addMessage(`The value in memory is ${value}.`, 'assistant');
+            }
+            // Memory clear pattern
+            else if (/clear\s+memory/i.test(message)) {
+                // Call WASM function
+                calculatorFunctions.memory_clear();
+                
+                addMessage(`I've cleared the memory.`, 'assistant');
+            }
+            // Help pattern
+            else if (/help|what can you do/i.test(message)) {
+                addMessage(
+                    "I can help with calculations. Try asking me things like:\n" +
+                    "- Calculate 125 × 37\n" +
+                    "- Store 42 in memory\n" +
+                    "- Recall memory\n" +
+                    "- Clear memory\n" +
+                    "In the future, I'll be able to handle more complex calculations and formulas!",
+                    'assistant'
+                );
+            }
+            // Default response
+            else {
+                addMessage(
+                    "I'm not sure how to help with that yet. Try asking me to calculate something, like 'Calculate 125 × 37'.",
+                    'assistant'
+                );
+            }
+        } catch (error) {
+            console.error('Error processing message:', error);
+            addMessage("Sorry, I encountered an error processing your request.", 'assistant');
+        }
+        
+        // Set status back to ready
+        setStatus('ready');
+    }
+    
+    /**
+     * Set the chat status
+     * @param {string} status - The status ('ready', 'processing', or 'error')
+     */
+    function setStatus(status) {
+        chatStatus.innerHTML = '';
+        
+        const statusIcon = document.createElement('i');
+        const statusText = document.createElement('small');
+        
+        switch (status) {
+            case 'ready':
+                statusIcon.className = 'bi bi-check-circle';
+                statusText.textContent = ' Ready';
+                chatStatus.className = 'text-success';
+                chatInput.disabled = false;
+                break;
+            case 'processing':
+                statusIcon.className = 'bi bi-hourglass-split';
+                statusText.textContent = ' Processing...';
+                chatStatus.className = 'text-warning';
+                chatInput.disabled = true;
+                break;
+            case 'error':
+                statusIcon.className = 'bi bi-exclamation-circle';
+                statusText.textContent = ' Error';
+                chatStatus.className = 'text-danger';
+                chatInput.disabled = false;
+                break;
+        }
+        
+        chatStatus.appendChild(statusIcon);
+        chatStatus.appendChild(statusText);
+    }
+    
+    // Handle form submission
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const message = chatInput.value.trim();
+        
+        if (message) {
+            // Add user message to chat
+            addMessage(message, 'user');
+            
+            // Clear input
+            chatInput.value = '';
+            
+            // Process message
+            processMessage(message);
+        }
+    });
+    
+    // Add focus and click handlers to ensure input works properly
+    chatInput.addEventListener('focus', (e) => {
+        // Ensure no other event handlers interfere with input
+        e.stopPropagation();
+    });
+    
+    chatInput.addEventListener('click', (e) => {
+        // Ensure no other event handlers interfere with input
+        e.stopPropagation();
+    });
+    
+    chatInput.addEventListener('keydown', (e) => {
+        // Ensure no other event handlers interfere with input
+        e.stopPropagation();
+    });
+    
+    // Set initial status
+    setStatus('ready');
+}
+
+================
+File: js/navigation.js
+================
+/**
+ * Navigation module for the Rust WASM Calculator
+ * Handles navigation between different sections of the application
+ */
+
+/**
+ * Initialize the navigation functionality
+ */
+export function initNavigation() {
+    // Get all navigation links
+    const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+    
+    // Get all sections
+    const sections = {
+        landing: document.getElementById('landing'),
+        calculator: document.getElementById('calculator'),
+        chatbot: document.getElementById('chatbot')
+    };
+    
+    // Function to show a section and hide others
+    function showSection(sectionId) {
+        // Hide all sections
+        Object.values(sections).forEach(section => {
+            section.classList.add('d-none');
+        });
+        
+        // Show the selected section
+        sections[sectionId].classList.remove('d-none');
+        
+        // Update active nav link
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href').substring(1); // Remove the # from href
+            if (href === sectionId) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        
+        // Update URL hash
+        window.location.hash = sectionId;
+    }
+    
+    // Add click event listeners to nav links
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const sectionId = link.getAttribute('href').substring(1); // Remove the # from href
+            showSection(sectionId);
+        });
+    });
+    
+    // Add click event listeners to landing page buttons
+    document.querySelectorAll('#landing a[href^="#"]').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const sectionId = button.getAttribute('href').substring(1); // Remove the # from href
+            showSection(sectionId);
+        });
+    });
+    
+    // Handle initial page load based on URL hash
+    function handleInitialNavigation() {
+        const hash = window.location.hash.substring(1); // Remove the # from hash
+        
+        if (hash && sections[hash]) {
+            showSection(hash);
+        } else {
+            // Default to landing page
+            showSection('landing');
+        }
+    }
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.substring(1);
+        if (hash && sections[hash]) {
+            showSection(hash);
+        }
+    });
+    
+    // Initialize navigation on page load
+    handleInitialNavigation();
 }
 
 ================
@@ -1681,892 +2237,326 @@ extern crate std;
 10. Avoid using wee_alloc as it's unmaintained. The default allocator is generally sufficient for WASM[4].
 
 ================
-File: src/lib.rs
+File: src/calculator/memory.rs
 ================
-//! Rust WASM Calculator is a WebAssembly calculator built with Rust.
+//! Calculator memory operations module.
 //!
-//! This crate provides a calculator implementation that can be used in web browsers
-//! through WebAssembly. It follows test-driven development practices and provides
-//! a clean, type-safe interface for basic and advanced calculations.
+//! This module provides memory-related operations for the calculator:
+//! - Store a value in memory
+//! - Recall the current memory value
+//! - Clear the memory
+//! - Add to memory
+//! - Subtract from memory
 //!
-//! # Features
-//!
-//! - WebAssembly integration using wasm-bindgen
-//! - Basic arithmetic operations
-//! - Memory functions
-//! - State management for calculator operations
-//! - Error handling with proper JavaScript integration
-//!
-//! # Examples
-//!
-//! ```rust
-//! use rust_wasm_calc::hello;
-//!
-//! // Basic greeting functionality
-//! let greeting = hello("Calculator");
-//! assert_eq!(greeting, "Hello, Calculator!");
-//! ```
+//! All operations are exposed to JavaScript through WebAssembly bindings.
 
 use wasm_bindgen::prelude::*;
 
-// Include the state module
-pub mod state;
+// Memory storage for calculator operations
+thread_local! {
+    static MEMORY: std::cell::RefCell<f64> = const { std::cell::RefCell::new(0.0) };
+}
 
-/// Returns a friendly greeting message.
+/// Stores a value in the calculator's memory.
 ///
-/// This function is currently a placeholder that demonstrates the WebAssembly
-/// binding functionality. It will be replaced with calculator operations
-/// in future versions.
+/// This function overwrites any previous value stored in memory.
 ///
 /// # Arguments
 ///
-/// * `name` - A string slice that contains the name to greet
+/// * `value` - The value to store in memory
 ///
 /// # Examples
 ///
-/// ```rust
-/// use rust_wasm_calc::hello;
-///
-/// let result = hello("World");
-/// assert_eq!(result, "Hello, World!");
-///
-/// // Works with empty strings
-/// let empty = hello("");
-/// assert_eq!(empty, "Hello, !");
 /// ```
+/// use rust_wasm_calc::calculator::{memory_store, memory_recall};
 ///
-/// # Note
-///
-/// This function is exposed to JavaScript through WebAssembly and can be
-/// called from web applications.
+/// memory_store(42.0);
+/// assert_eq!(memory_recall(), 42.0);
+/// ```
 #[wasm_bindgen]
-pub fn hello(name: &str) -> String {
-    format!("Hello, {}!", name)
+pub fn memory_store(value: f64) {
+    MEMORY.with(|memory| {
+        *memory.borrow_mut() = value;
+    });
 }
 
-/// Calculator module providing basic arithmetic operations.
+/// Recalls the current value stored in the calculator's memory.
 ///
-/// This module contains functions for addition, subtraction, multiplication,
-/// and division, all exposed to JavaScript through WebAssembly bindings.
-pub mod calculator {
-    use wasm_bindgen::prelude::*;
-
-    /// Result type for calculator operations that might fail.
-    ///
-    /// This type is used for operations like division that can result in errors.
-    pub type CalcResult = Result<f64, String>;
-
-    // Memory storage for calculator operations
-    thread_local! {
-        static MEMORY: std::cell::RefCell<f64> = std::cell::RefCell::new(0.0);
-    }
-
-    /// Stores a value in the calculator's memory.
-    ///
-    /// This function overwrites any previous value stored in memory.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The value to store in memory
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::{memory_store, memory_recall};
-    ///
-    /// memory_store(42.0);
-    /// assert_eq!(memory_recall(), 42.0);
-    /// ```
-    #[wasm_bindgen]
-    pub fn memory_store(value: f64) {
-        MEMORY.with(|memory| {
-            *memory.borrow_mut() = value;
-        });
-    }
-
-    /// Recalls the current value stored in the calculator's memory.
-    ///
-    /// # Returns
-    ///
-    /// The current value stored in memory
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::{memory_store, memory_recall};
-    ///
-    /// memory_store(42.0);
-    /// assert_eq!(memory_recall(), 42.0);
-    /// ```
-    #[wasm_bindgen]
-    pub fn memory_recall() -> f64 {
-        MEMORY.with(|memory| {
-            *memory.borrow()
-        })
-    }
-
-    /// Clears the calculator's memory by setting it to zero.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::{memory_store, memory_clear, memory_recall};
-    ///
-    /// memory_store(42.0);
-    /// memory_clear();
-    /// assert_eq!(memory_recall(), 0.0);
-    /// ```
-    #[wasm_bindgen]
-    pub fn memory_clear() {
-        MEMORY.with(|memory| {
-            *memory.borrow_mut() = 0.0;
-        });
-    }
-
-    /// Adds a value to the current value stored in memory.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The value to add to the memory
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::{memory_clear, memory_add, memory_recall};
-    ///
-    /// memory_clear();
-    /// memory_add(5.0);
-    /// memory_add(3.0);
-    /// assert_eq!(memory_recall(), 8.0);
-    /// ```
-    #[wasm_bindgen]
-    pub fn memory_add(value: f64) {
-        MEMORY.with(|memory| {
-            *memory.borrow_mut() += value;
-        });
-    }
-
-    /// Subtracts a value from the current value stored in memory.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The value to subtract from the memory
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::{memory_store, memory_subtract, memory_recall};
-    ///
-    /// memory_store(10.0);
-    /// memory_subtract(3.0);
-    /// assert_eq!(memory_recall(), 7.0);
-    /// ```
-    #[wasm_bindgen]
-    pub fn memory_subtract(value: f64) {
-        MEMORY.with(|memory| {
-            *memory.borrow_mut() -= value;
-        });
-    }
-
-    /// Adds two numbers and returns the result.
-    ///
-    /// # Arguments
-    ///
-    /// * `a` - First operand
-    /// * `b` - Second operand
-    ///
-    /// # Returns
-    ///
-    /// The sum of `a` and `b`
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::add;
-    ///
-    /// assert_eq!(add(2.0, 3.0), 5.0);
-    /// assert_eq!(add(-1.0, 1.0), 0.0);
-    /// ```
-    #[wasm_bindgen]
-    pub fn add(a: f64, b: f64) -> f64 {
-        a + b
-    }
-
-    /// Subtracts the second number from the first and returns the result.
-    ///
-    /// # Arguments
-    ///
-    /// * `a` - First operand
-    /// * `b` - Second operand
-    ///
-    /// # Returns
-    ///
-    /// The difference `a - b`
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::subtract;
-    ///
-    /// assert_eq!(subtract(5.0, 3.0), 2.0);
-    /// assert_eq!(subtract(1.0, 1.0), 0.0);
-    /// ```
-    #[wasm_bindgen]
-    pub fn subtract(a: f64, b: f64) -> f64 {
-        a - b
-    }
-
-    /// Multiplies two numbers and returns the result.
-    ///
-    /// # Arguments
-    ///
-    /// * `a` - First operand
-    /// * `b` - Second operand
-    ///
-    /// # Returns
-    ///
-    /// The product of `a` and `b`
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::multiply;
-    ///
-    /// assert_eq!(multiply(2.0, 3.0), 6.0);
-    /// assert_eq!(multiply(0.0, 5.0), 0.0);
-    /// ```
-    #[wasm_bindgen]
-    pub fn multiply(a: f64, b: f64) -> f64 {
-        a * b
-    }
-
-    /// Divides the first number by the second and returns the result.
-    ///
-    /// # Arguments
-    ///
-    /// * `a` - Dividend (numerator)
-    /// * `b` - Divisor (denominator)
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(result)` - The quotient `a / b` if successful
-    /// * `Err(message)` - An error message if division by zero is attempted
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_wasm_calc::calculator::divide;
-    ///
-    /// assert_eq!(divide(6.0, 3.0), Ok(2.0));
-    /// assert_eq!(divide(1.0, 0.0).is_err(), true);
-    /// ```
-    #[wasm_bindgen]
-    pub fn divide(a: f64, b: f64) -> CalcResult {
-        if b == 0.0 {
-            Err("Division by zero is not allowed".to_string())
-        } else {
-            Ok(a / b)
-        }
-    }
+/// # Returns
+///
+/// The current value stored in memory
+///
+/// # Examples
+///
+/// ```
+/// use rust_wasm_calc::calculator::{memory_store, memory_recall};
+///
+/// memory_store(42.0);
+/// assert_eq!(memory_recall(), 42.0);
+/// ```
+#[wasm_bindgen]
+pub fn memory_recall() -> f64 {
+    MEMORY.with(|memory| {
+        *memory.borrow()
+    })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
-
-    /// Tests the hello function with a basic Rust string.
-    #[test]
-    fn test_hello_rust() {
-        let result = hello("Rust");
-        assert_eq!(result, "Hello, Rust!");
-    }
-
-    /// Tests the hello function in a browser WebAssembly environment.
-    #[wasm_bindgen_test]
-    fn test_hello_wasm_browser() {
-        let result = hello("WASM");
-        assert_eq!(result, "Hello, WASM!");
-    }
-
-    /// Tests the hello function with an empty string.
-    #[wasm_bindgen_test]
-    fn test_hello_empty_string() {
-        let result = hello("");
-        assert_eq!(result, "Hello, !");
-    }
-
-    /// Tests the hello function with a very long input string.
-    /// This test ensures the function handles large inputs correctly.
-    #[wasm_bindgen_test]
-    fn test_hello_long_string() {
-        let long_name = "a".repeat(1000);
-        let result = hello(&long_name);
-        assert!(result.starts_with("Hello, "));
-        assert!(result.ends_with("!"));
-    }
+/// Clears the calculator's memory by setting it to zero.
+///
+/// # Examples
+///
+/// ```
+/// use rust_wasm_calc::calculator::{memory_store, memory_clear, memory_recall};
+///
+/// memory_store(42.0);
+/// memory_clear();
+/// assert_eq!(memory_recall(), 0.0);
+/// ```
+#[wasm_bindgen]
+pub fn memory_clear() {
+    MEMORY.with(|memory| {
+        *memory.borrow_mut() = 0.0;
+    });
 }
 
-/// Tests for calculator operations.
-#[cfg(test)]
-mod calculator_tests {
-    use super::calculator::*;
-    use wasm_bindgen_test::*;
+/// Adds a value to the current value stored in memory.
+///
+/// # Arguments
+///
+/// * `value` - The value to add to the memory
+///
+/// # Examples
+///
+/// ```
+/// use rust_wasm_calc::calculator::{memory_clear, memory_add, memory_recall};
+///
+/// memory_clear();
+/// memory_add(5.0);
+/// memory_add(3.0);
+/// assert_eq!(memory_recall(), 8.0);
+/// ```
+#[wasm_bindgen]
+pub fn memory_add(value: f64) {
+    MEMORY.with(|memory| {
+        *memory.borrow_mut() += value;
+    });
+}
 
-    wasm_bindgen_test_configure!(run_in_browser);
-
-    /// Tests for the add function.
-    mod add_tests {
-        use super::*;
-
-        /// Tests basic addition with positive numbers.
-        #[test]
-        fn test_add_positive_numbers() {
-            // Arrange
-            let a = 2.0;
-            let b = 3.0;
-            
-            // Act
-            let result = add(a, b);
-            
-            // Assert
-            assert_eq!(result, 5.0);
-        }
-
-        /// Tests addition with negative numbers.
-        #[test]
-        fn test_add_negative_numbers() {
-            // Arrange
-            let a = -2.0;
-            let b = -3.0;
-            
-            // Act
-            let result = add(a, b);
-            
-            // Assert
-            assert_eq!(result, -5.0);
-        }
-
-        /// Tests addition with mixed positive and negative numbers.
-        #[test]
-        fn test_add_mixed_signs() {
-            // Arrange
-            let a = 5.0;
-            let b = -3.0;
-            
-            // Act
-            let result = add(a, b);
-            
-            // Assert
-            assert_eq!(result, 2.0);
-        }
-
-        /// Tests addition with zero.
-        #[test]
-        fn test_add_with_zero() {
-            // Arrange
-            let a = 5.0;
-            let b = 0.0;
-            
-            // Act
-            let result = add(a, b);
-            
-            // Assert
-            assert_eq!(result, 5.0);
-        }
-
-        /// Tests addition with floating point numbers.
-        #[test]
-        fn test_add_floating_point() {
-            // Arrange
-            let a = 0.1;
-            let b = 0.2;
-            
-            // Act
-            let result = add(a, b);
-            
-            // Assert
-            // Use a larger epsilon for floating point comparison
-            const EPSILON: f64 = 1e-10;
-            assert!((result - 0.3).abs() < EPSILON);
-        }
-
-        /// Tests addition in WebAssembly environment.
-        #[wasm_bindgen_test]
-        fn test_add_wasm() {
-            // Arrange
-            let a = 10.0;
-            let b = 20.0;
-            
-            // Act
-            let result = add(a, b);
-            
-            // Assert
-            assert_eq!(result, 30.0);
-        }
-    }
-
-    /// Tests for the subtract function.
-    mod subtract_tests {
-        use super::*;
-
-        /// Tests basic subtraction with positive numbers.
-        #[test]
-        fn test_subtract_positive_numbers() {
-            // Arrange
-            let a = 5.0;
-            let b = 3.0;
-            
-            // Act
-            let result = subtract(a, b);
-            
-            // Assert
-            assert_eq!(result, 2.0);
-        }
-
-        /// Tests subtraction with negative numbers.
-        #[test]
-        fn test_subtract_negative_numbers() {
-            // Arrange
-            let a = -2.0;
-            let b = -3.0;
-            
-            // Act
-            let result = subtract(a, b);
-            
-            // Assert
-            assert_eq!(result, 1.0);
-        }
-
-        /// Tests subtraction with mixed positive and negative numbers.
-        #[test]
-        fn test_subtract_mixed_signs() {
-            // Arrange
-            let a = 5.0;
-            let b = -3.0;
-            
-            // Act
-            let result = subtract(a, b);
-            
-            // Assert
-            assert_eq!(result, 8.0);
-        }
-
-        /// Tests subtraction with zero.
-        #[test]
-        fn test_subtract_with_zero() {
-            // Arrange
-            let a = 5.0;
-            let b = 0.0;
-            
-            // Act
-            let result = subtract(a, b);
-            
-            // Assert
-            assert_eq!(result, 5.0);
-        }
-
-        /// Tests subtraction with floating point numbers.
-        #[test]
-        fn test_subtract_floating_point() {
-            // Arrange
-            let a = 0.3;
-            let b = 0.1;
-            
-            // Act
-            let result = subtract(a, b);
-            
-            // Assert
-            // Use a larger epsilon for floating point comparison
-            const EPSILON: f64 = 1e-10;
-            assert!((result - 0.2).abs() < EPSILON);
-        }
-
-        /// Tests subtraction in WebAssembly environment.
-        #[wasm_bindgen_test]
-        fn test_subtract_wasm() {
-            // Arrange
-            let a = 30.0;
-            let b = 10.0;
-            
-            // Act
-            let result = subtract(a, b);
-            
-            // Assert
-            assert_eq!(result, 20.0);
-        }
-    }
-
-    /// Tests for the multiply function.
-    mod multiply_tests {
-        use super::*;
-
-        /// Tests basic multiplication with positive numbers.
-        #[test]
-        fn test_multiply_positive_numbers() {
-            // Arrange
-            let a = 2.0;
-            let b = 3.0;
-            
-            // Act
-            let result = multiply(a, b);
-            
-            // Assert
-            assert_eq!(result, 6.0);
-        }
-
-        /// Tests multiplication with negative numbers.
-        #[test]
-        fn test_multiply_negative_numbers() {
-            // Arrange
-            let a = -2.0;
-            let b = -3.0;
-            
-            // Act
-            let result = multiply(a, b);
-            
-            // Assert
-            assert_eq!(result, 6.0);
-        }
-
-        /// Tests multiplication with mixed positive and negative numbers.
-        #[test]
-        fn test_multiply_mixed_signs() {
-            // Arrange
-            let a = 5.0;
-            let b = -3.0;
-            
-            // Act
-            let result = multiply(a, b);
-            
-            // Assert
-            assert_eq!(result, -15.0);
-        }
-
-        /// Tests multiplication with zero.
-        #[test]
-        fn test_multiply_with_zero() {
-            // Arrange
-            let a = 5.0;
-            let b = 0.0;
-            
-            // Act
-            let result = multiply(a, b);
-            
-            // Assert
-            assert_eq!(result, 0.0);
-        }
-
-        /// Tests multiplication with floating point numbers.
-        #[test]
-        fn test_multiply_floating_point() {
-            // Arrange
-            let a = 0.1;
-            let b = 0.2;
-            
-            // Act
-            let result = multiply(a, b);
-            
-            // Assert
-            // Use a larger epsilon for floating point comparison
-            const EPSILON: f64 = 1e-10;
-            assert!((result - 0.02).abs() < EPSILON);
-        }
-
-        /// Tests multiplication in WebAssembly environment.
-        #[wasm_bindgen_test]
-        fn test_multiply_wasm() {
-            // Arrange
-            let a = 10.0;
-            let b = 20.0;
-            
-            // Act
-            let result = multiply(a, b);
-            
-            // Assert
-            assert_eq!(result, 200.0);
-        }
-    }
-
-    /// Tests for the divide function.
-    mod divide_tests {
-        use super::*;
-
-        /// Tests basic division with positive numbers.
-        #[test]
-        fn test_divide_positive_numbers() {
-            // Arrange
-            let a = 6.0;
-            let b = 3.0;
-            
-            // Act
-            let result = divide(a, b);
-            
-            // Assert
-            assert_eq!(result.unwrap(), 2.0);
-        }
-
-        /// Tests division with negative numbers.
-        #[test]
-        fn test_divide_negative_numbers() {
-            // Arrange
-            let a = -6.0;
-            let b = -3.0;
-            
-            // Act
-            let result = divide(a, b);
-            
-            // Assert
-            assert_eq!(result.unwrap(), 2.0);
-        }
-
-        /// Tests division with mixed positive and negative numbers.
-        #[test]
-        fn test_divide_mixed_signs() {
-            // Arrange
-            let a = 6.0;
-            let b = -3.0;
-            
-            // Act
-            let result = divide(a, b);
-            
-            // Assert
-            assert_eq!(result.unwrap(), -2.0);
-        }
-
-        /// Tests division by zero.
-        #[test]
-        fn test_divide_by_zero() {
-            // Arrange
-            let a = 5.0;
-            let b = 0.0;
-            
-            // Act
-            let result = divide(a, b);
-            
-            // Assert
-            assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), "Division by zero is not allowed");
-        }
-
-        /// Tests division with floating point numbers.
-        #[test]
-        fn test_divide_floating_point() {
-            // Arrange
-            let a = 0.6;
-            let b = 0.2;
-            
-            // Act
-            let result = divide(a, b);
-            
-            // Assert
-            // Use a larger epsilon for floating point comparison
-            const EPSILON: f64 = 1e-10;
-            assert!((result.unwrap() - 3.0).abs() < EPSILON);
-        }
-
-        /// Tests division in WebAssembly environment.
-        #[wasm_bindgen_test]
-        fn test_divide_wasm() {
-            // Arrange
-            let a = 20.0;
-            let b = 10.0;
-            
-            // Act
-            let result = divide(a, b);
-            
-            // Assert
-            assert_eq!(result.unwrap(), 2.0);
-        }
-
-        /// Tests division by zero in WebAssembly environment.
-        #[wasm_bindgen_test]
-        fn test_divide_by_zero_wasm() {
-            // Arrange
-            let a = 20.0;
-            let b = 0.0;
-            
-            // Act
-            let result = divide(a, b);
-            
-            // Assert
-            assert!(result.is_err());
-            assert_eq!(result.unwrap_err(), "Division by zero is not allowed");
-        }
-    }
-
-    /// Tests for memory operations.
-    mod memory_tests {
-        use super::*;
-
-        /// Tests storing a value in memory.
-        #[test]
-        fn test_memory_store() {
-            // Arrange
-            let value = 42.0;
-            
-            // Act
-            memory_store(value);
-            let result = memory_recall();
-            
-            // Assert
-            assert_eq!(result, 42.0);
-        }
-
-        /// Tests recalling a value from memory.
-        #[test]
-        fn test_memory_recall() {
-            // Arrange
-            memory_store(10.0);
-            
-            // Act
-            let result = memory_recall();
-            
-            // Assert
-            assert_eq!(result, 10.0);
-        }
-
-        /// Tests clearing the memory.
-        #[test]
-        fn test_memory_clear() {
-            // Arrange
-            memory_store(10.0);
-            
-            // Act
-            memory_clear();
-            let result = memory_recall();
-            
-            // Assert
-            assert_eq!(result, 0.0);
-        }
-
-        /// Tests adding to memory.
-        #[test]
-        fn test_memory_add() {
-            // Arrange
-            memory_store(10.0);
-            
-            // Act
-            memory_add(5.0);
-            let result = memory_recall();
-            
-            // Assert
-            assert_eq!(result, 15.0);
-        }
-
-        /// Tests subtracting from memory.
-        #[test]
-        fn test_memory_subtract() {
-            // Arrange
-            memory_store(10.0);
-            
-            // Act
-            memory_subtract(3.0);
-            let result = memory_recall();
-            
-            // Assert
-            assert_eq!(result, 7.0);
-        }
-
-        /// Tests memory operations in sequence.
-        #[test]
-        fn test_memory_sequence() {
-            // Arrange & Act
-            memory_clear();
-            memory_add(5.0);
-            memory_add(10.0);
-            memory_subtract(3.0);
-            let result = memory_recall();
-            
-            // Assert
-            assert_eq!(result, 12.0);
-        }
-
-        /// Tests memory operations in WebAssembly environment.
-        #[wasm_bindgen_test]
-        fn test_memory_wasm() {
-            // Arrange & Act
-            memory_clear();
-            memory_store(20.0);
-            memory_add(5.0);
-            memory_subtract(10.0);
-            let result = memory_recall();
-            
-            // Assert
-            assert_eq!(result, 15.0);
-        }
-    }
+/// Subtracts a value from the current value stored in memory.
+///
+/// # Arguments
+///
+/// * `value` - The value to subtract from the memory
+///
+/// # Examples
+///
+/// ```
+/// use rust_wasm_calc::calculator::{memory_store, memory_subtract, memory_recall};
+///
+/// memory_store(10.0);
+/// memory_subtract(3.0);
+/// assert_eq!(memory_recall(), 7.0);
+/// ```
+#[wasm_bindgen]
+pub fn memory_subtract(value: f64) {
+    MEMORY.with(|memory| {
+        *memory.borrow_mut() -= value;
+    });
 }
 
 ================
-File: src/state.rs
+File: src/calculator/mod.rs
+================
+//! Calculator module for the Rust WASM Calculator.
+//!
+//! This module provides the core calculator functionality including:
+//! - Basic arithmetic operations (add, subtract, multiply, divide)
+//! - Memory operations (store, recall, clear, add, subtract)
+//!
+//! The module is designed to be used with WebAssembly through wasm-bindgen.
+
+// Export submodules
+pub mod operations;
+pub mod memory;
+
+// Re-export commonly used types and functions
+pub use operations::{add, subtract, multiply, divide, divide_wasm};
+pub use memory::{memory_store, memory_recall, memory_clear, memory_add, memory_subtract};
+pub use crate::errors::CalcResult;
+
+================
+File: src/calculator/operations.rs
+================
+//! Calculator operations module.
+//!
+//! This module provides the core arithmetic operations for the calculator:
+//! - Addition
+//! - Subtraction
+//! - Multiplication
+//! - Division
+//!
+//! All operations are exposed to JavaScript through WebAssembly bindings.
+
+use wasm_bindgen::prelude::*;
+use crate::errors::{CalculatorError, CalcResult};
+
+/// Adds two numbers and returns the result.
+///
+/// # Arguments
+///
+/// * `a` - First operand
+/// * `b` - Second operand
+///
+/// # Returns
+///
+/// The sum of `a` and `b`
+///
+/// # Examples
+///
+/// ```
+/// use rust_wasm_calc::calculator::add;
+///
+/// assert_eq!(add(2.0, 3.0), 5.0);
+/// assert_eq!(add(-1.0, 1.0), 0.0);
+/// ```
+#[wasm_bindgen]
+pub fn add(a: f64, b: f64) -> f64 {
+    a + b
+}
+
+/// Subtracts the second number from the first and returns the result.
+///
+/// # Arguments
+///
+/// * `a` - First operand
+/// * `b` - Second operand
+///
+/// # Returns
+///
+/// The difference `a - b`
+///
+/// # Examples
+///
+/// ```
+/// use rust_wasm_calc::calculator::subtract;
+///
+/// assert_eq!(subtract(5.0, 3.0), 2.0);
+/// assert_eq!(subtract(1.0, 1.0), 0.0);
+/// ```
+#[wasm_bindgen]
+pub fn subtract(a: f64, b: f64) -> f64 {
+    a - b
+}
+
+/// Multiplies two numbers and returns the result.
+///
+/// # Arguments
+///
+/// * `a` - First operand
+/// * `b` - Second operand
+///
+/// # Returns
+///
+/// The product of `a` and `b`
+///
+/// # Examples
+///
+/// ```
+/// use rust_wasm_calc::calculator::multiply;
+///
+/// assert_eq!(multiply(2.0, 3.0), 6.0);
+/// assert_eq!(multiply(0.0, 5.0), 0.0);
+/// ```
+#[wasm_bindgen]
+pub fn multiply(a: f64, b: f64) -> f64 {
+    a * b
+}
+
+/// Divides the first number by the second and returns the result.
+///
+/// # Arguments
+///
+/// * `a` - Dividend (numerator)
+/// * `b` - Divisor (denominator)
+///
+/// # Returns
+///
+/// * `Ok(result)` - The quotient `a / b` if successful
+/// * `Err(error)` - A calculator error if division by zero is attempted
+///
+/// # Examples
+///
+/// ```
+/// use rust_wasm_calc::calculator::divide;
+///
+/// let result = divide(6.0, 3.0);
+/// assert!(result.is_ok());
+/// assert_eq!(result.unwrap(), 2.0);
+///
+/// let error = divide(1.0, 0.0);
+/// assert!(error.is_err());
+/// ```
+pub fn divide(a: f64, b: f64) -> CalcResult {
+    if b == 0.0 {
+        Err(CalculatorError::division_by_zero())
+    } else {
+        Ok(a / b)
+    }
+}
+
+/// Divides the first number by the second and returns the result.
+/// This is a WebAssembly-friendly version that returns a Result as a JsValue.
+///
+/// # Arguments
+///
+/// * `a` - Dividend (numerator)
+/// * `b` - Divisor (denominator)
+///
+/// # Returns
+///
+/// The quotient `a / b` if successful, or an error message if division by zero is attempted
+#[wasm_bindgen(js_name = divide)]
+pub fn divide_wasm(a: f64, b: f64) -> Result<f64, JsValue> {
+    divide(a, b).map_err(|e| JsValue::from_str(e.message()))
+}
+
+================
+File: src/state/mod.rs
 ================
 //! Calculator state management module.
 //!
 //! This module provides functionality for managing the calculator's state,
 //! including tracking current input, operations, and memory state.
+//!
+//! The module is organized into:
+//! - Type definitions (Operation enum, CalculatorState struct)
+//! - State operations (methods for manipulating calculator state)
+
+// Export submodules
+pub mod types;
+pub mod operations;
+
+// Re-export commonly used types and functions
+pub use types::{Operation, CalculatorState};
+
+================
+File: src/state/operations.rs
+================
+//! Operations for manipulating calculator state.
+//!
+//! This module provides the implementation of operations that can be performed
+//! on the calculator state, such as:
+//! - Clearing the calculator
+//! - Inputting digits and decimal points
+//! - Setting operations
+//! - Calculating results
 
 use wasm_bindgen::prelude::*;
-
-/// Represents the current operation being performed.
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Operation {
-    None,
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
-}
-
-/// Represents the current state of the calculator.
-#[wasm_bindgen]
-pub struct CalculatorState {
-    /// The current display value
-    display_value: String,
-    /// The first operand for binary operations
-    first_operand: Option<f64>,
-    /// The current operation
-    current_operation: Operation,
-    /// Whether the display should be cleared on next input
-    clear_on_next_input: bool,
-    /// Whether the last button pressed was an operation
-    last_pressed_operation: bool,
-    /// Whether there is an error state
-    error_state: bool,
-}
+use super::types::{CalculatorState, Operation};
+use crate::errors::CalculatorError;
 
 #[wasm_bindgen]
 impl CalculatorState {
-    /// Creates a new calculator state with default values.
-    ///
-    /// # Returns
-    ///
-    /// A new `CalculatorState` instance with initial values.
-    #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
-        Self {
-            display_value: "0".to_string(),
-            first_operand: None,
-            current_operation: Operation::None,
-            clear_on_next_input: false,
-            last_pressed_operation: false,
-            error_state: false,
-        }
-    }
-
-    /// Gets the current display value.
-    ///
-    /// # Returns
-    ///
-    /// The current display value as a string.
-    #[wasm_bindgen(getter)]
-    pub fn display_value(&self) -> String {
-        self.display_value.clone()
-    }
-
     /// Clears the calculator state.
     ///
     /// This resets the calculator to its initial state.
@@ -2705,7 +2695,7 @@ impl CalculatorState {
                         Operation::Multiply => Ok(first * second),
                         Operation::Divide => {
                             if second == 0.0 {
-                                Err("Division by zero")
+                                Err(CalculatorError::division_by_zero())
                             } else {
                                 Ok(first / second)
                             }
@@ -2715,23 +2705,32 @@ impl CalculatorState {
 
                     match result {
                         Ok(value) => {
-                            // Format the result to avoid unnecessary decimal places
-                            if value == (value as i64) as f64 {
-                                self.display_value = format!("{}", value as i64);
+                            // Check for overflow/underflow
+                            if value.is_infinite() {
+                                self.error_state = true;
+                                self.display_value = "Error: Overflow".to_string();
+                            } else if value.is_nan() {
+                                self.error_state = true;
+                                self.display_value = "Error: Invalid operation".to_string();
                             } else {
-                                self.display_value = format!("{}", value);
+                                // Format the result to avoid unnecessary decimal places
+                                if value == (value as i64) as f64 {
+                                    self.display_value = format!("{}", value as i64);
+                                } else {
+                                    self.display_value = format!("{}", value);
+                                }
+                                self.first_operand = Some(value);
                             }
-                            self.first_operand = Some(value);
                         }
-                        Err(_) => {
+                        Err(error) => {
                             self.error_state = true;
-                            self.display_value = "Error".to_string();
+                            self.display_value = format!("Error: {}", error.message());
                         }
                     }
                 }
                 Err(_) => {
                     self.error_state = true;
-                    self.display_value = "Error".to_string();
+                    self.display_value = "Error: Invalid input".to_string();
                 }
             }
         }
@@ -2742,217 +2741,1180 @@ impl CalculatorState {
     }
 }
 
+================
+File: src/state/types.rs
+================
+//! Type definitions for calculator state management.
+//!
+//! This module defines the core types used for managing calculator state:
+//! - Operation enum for representing arithmetic operations
+//! - CalculatorState struct for tracking the calculator's current state
+
+use wasm_bindgen::prelude::*;
+
+/// Represents the current operation being performed.
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Operation {
+    None,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+}
+
+/// Represents the current state of the calculator.
+#[wasm_bindgen]
+pub struct CalculatorState {
+    /// The current display value
+    pub(crate) display_value: String,
+    /// The first operand for binary operations
+    pub(crate) first_operand: Option<f64>,
+    /// The current operation
+    pub(crate) current_operation: Operation,
+    /// Whether the display should be cleared on next input
+    pub(crate) clear_on_next_input: bool,
+    /// Whether the last button pressed was an operation
+    pub(crate) last_pressed_operation: bool,
+    /// Whether there is an error state
+    pub(crate) error_state: bool,
+}
+
+impl Default for CalculatorState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Constructor and basic getters for CalculatorState
+#[wasm_bindgen]
+impl CalculatorState {
+    /// Creates a new calculator state with default values.
+    ///
+    /// # Returns
+    ///
+    /// A new `CalculatorState` instance with initial values.
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            display_value: "0".to_string(),
+            first_operand: None,
+            current_operation: Operation::None,
+            clear_on_next_input: false,
+            last_pressed_operation: false,
+            error_state: false,
+        }
+    }
+
+    /// Gets the current display value.
+    ///
+    /// # Returns
+    ///
+    /// The current display value as a string.
+    #[wasm_bindgen]
+    pub fn display_value(&self) -> String {
+        self.display_value.clone()
+    }
+}
+
+================
+File: src/errors.rs
+================
+//! Error handling module for the Rust WASM Calculator.
+//!
+//! This module provides standardized error types and conversion functions
+//! for handling errors in calculator operations. It ensures consistent
+//! error handling across the application and proper integration with JavaScript.
+
+use wasm_bindgen::prelude::*;
+use std::fmt;
+
+/// Represents the different types of errors that can occur in calculator operations.
+#[wasm_bindgen]
+#[derive(Debug, Clone, PartialEq)]
+pub enum CalculatorErrorType {
+    /// Division by zero error
+    DivisionByZero,
+    /// Invalid input error (e.g., non-numeric input)
+    InvalidInput,
+    /// Overflow error (result too large)
+    Overflow,
+    /// Underflow error (result too small)
+    Underflow,
+    /// General calculation error
+    CalculationError,
+}
+
+/// Represents an error that occurred during a calculator operation.
+#[derive(Debug, Clone)]
+pub struct CalculatorError {
+    /// The type of error that occurred
+    error_type: CalculatorErrorType,
+    /// A human-readable message describing the error
+    message: String,
+}
+
+impl CalculatorError {
+    /// Creates a new calculator error.
+    ///
+    /// # Arguments
+    ///
+    /// * `error_type` - The type of error that occurred
+    /// * `message` - A human-readable message describing the error
+    ///
+    /// # Returns
+    ///
+    /// A new `CalculatorError` instance
+    pub fn new(error_type: CalculatorErrorType, message: impl Into<String>) -> Self {
+        Self {
+            error_type,
+            message: message.into(),
+        }
+    }
+
+    /// Creates a division by zero error.
+    ///
+    /// # Returns
+    ///
+    /// A new `CalculatorError` instance with the `DivisionByZero` error type
+    pub fn division_by_zero() -> Self {
+        Self::new(
+            CalculatorErrorType::DivisionByZero,
+            "Division by zero is not allowed",
+        )
+    }
+
+    /// Creates an invalid input error.
+    ///
+    /// # Arguments
+    ///
+    /// * `details` - Optional details about the invalid input
+    ///
+    /// # Returns
+    ///
+    /// A new `CalculatorError` instance with the `InvalidInput` error type
+    pub fn invalid_input(details: Option<&str>) -> Self {
+        let message = match details {
+            Some(details) => format!("Invalid input: {}", details),
+            None => "Invalid input".to_string(),
+        };
+        Self::new(CalculatorErrorType::InvalidInput, message)
+    }
+
+    /// Creates an overflow error.
+    ///
+    /// # Returns
+    ///
+    /// A new `CalculatorError` instance with the `Overflow` error type
+    pub fn overflow() -> Self {
+        Self::new(
+            CalculatorErrorType::Overflow,
+            "Result is too large to represent",
+        )
+    }
+
+    /// Creates an underflow error.
+    ///
+    /// # Returns
+    ///
+    /// A new `CalculatorError` instance with the `Underflow` error type
+    pub fn underflow() -> Self {
+        Self::new(
+            CalculatorErrorType::Underflow,
+            "Result is too small to represent",
+        )
+    }
+
+    /// Gets the error type.
+    ///
+    /// # Returns
+    ///
+    /// The type of error that occurred
+    pub fn error_type(&self) -> CalculatorErrorType {
+        self.error_type.clone()
+    }
+
+    /// Gets the error message.
+    ///
+    /// # Returns
+    ///
+    /// A human-readable message describing the error
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    /// Converts the error to a JavaScript-friendly string.
+    ///
+    /// # Returns
+    ///
+    /// A string representation of the error suitable for JavaScript
+    pub fn to_js_string(&self) -> String {
+        self.message.clone()
+    }
+}
+
+impl fmt::Display for CalculatorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for CalculatorError {}
+
+/// Result type for calculator operations that might fail.
+///
+/// This type is used for operations like division that can result in errors.
+pub type CalcResult<T = f64> = Result<T, CalculatorError>;
+
+/// Converts a string error to a CalculatorError.
+///
+/// This function is used to convert legacy string errors to the new error type.
+///
+/// # Arguments
+///
+/// * `error_message` - The error message
+///
+/// # Returns
+///
+/// A `CalculatorError` instance
+pub fn string_to_calculator_error(error_message: &str) -> CalculatorError {
+    match error_message {
+        "Division by zero is not allowed" => CalculatorError::division_by_zero(),
+        _ if error_message.starts_with("Invalid input") => {
+            CalculatorError::invalid_input(Some(&error_message[14..]))
+        }
+        _ => CalculatorError::new(
+            CalculatorErrorType::CalculationError,
+            error_message.to_string(),
+        ),
+    }
+}
+
+/// Converts a CalculatorError to a JavaScript-friendly string.
+///
+/// # Arguments
+///
+/// * `error_type` - The calculator error type
+/// * `message` - The error message
+///
+/// # Returns
+///
+/// A string representation of the error suitable for JavaScript
+#[wasm_bindgen]
+pub fn error_to_js_string_by_type(error_type: CalculatorErrorType, message: &str) -> String {
+    match error_type {
+        CalculatorErrorType::DivisionByZero => "Division by zero is not allowed".to_string(),
+        CalculatorErrorType::InvalidInput => format!("Invalid input: {}", message),
+        CalculatorErrorType::Overflow => "Result is too large to represent".to_string(),
+        CalculatorErrorType::Underflow => "Result is too small to represent".to_string(),
+        CalculatorErrorType::CalculationError => format!("Calculation error: {}", message),
+    }
+}
+
+================
+File: src/lib.rs
+================
+//! Rust WASM Calculator is a WebAssembly calculator built with Rust.
+//!
+//! This crate provides a calculator implementation that can be used in web browsers
+//! through WebAssembly. It follows test-driven development practices and provides
+//! a clean, type-safe interface for basic and advanced calculations.
+//!
+//! # Features
+//!
+//! - WebAssembly integration using wasm-bindgen
+//! - Basic arithmetic operations
+//! - Memory functions
+//! - State management for calculator operations
+//! - Error handling with proper JavaScript integration
+//!
+//! # Examples
+//!
+//! ```rust
+//! use rust_wasm_calc::hello;
+//!
+//! // Basic greeting functionality
+//! let greeting = hello("Calculator");
+//! assert_eq!(greeting, "Hello, Calculator!");
+//! ```
+
+use wasm_bindgen::prelude::*;
+
+// Include modules
+pub mod calculator;
+pub mod state;
+pub mod errors;
+
+/// Returns a friendly greeting message.
+///
+/// This function is currently a placeholder that demonstrates the WebAssembly
+/// binding functionality. It will be replaced with calculator operations
+/// in future versions.
+///
+/// # Arguments
+///
+/// * `name` - A string slice that contains the name to greet
+///
+/// # Examples
+///
+/// ```rust
+/// use rust_wasm_calc::hello;
+///
+/// let result = hello("World");
+/// assert_eq!(result, "Hello, World!");
+///
+/// // Works with empty strings
+/// let empty = hello("");
+/// assert_eq!(empty, "Hello, !");
+/// ```
+///
+/// # Note
+///
+/// This function is exposed to JavaScript through WebAssembly and can be
+/// called from web applications.
+#[wasm_bindgen]
+pub fn hello(name: &str) -> String {
+    format!("Hello, {}!", name)
+}
+
+// Tests for the hello function
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wasm_bindgen_test::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     #[test]
-    fn test_new_calculator_state() {
-        let state = CalculatorState::new();
-        assert_eq!(state.display_value, "0");
-        assert_eq!(state.first_operand, None);
-        assert_eq!(state.current_operation, Operation::None);
-        assert_eq!(state.clear_on_next_input, false);
-        assert_eq!(state.last_pressed_operation, false);
-        assert_eq!(state.error_state, false);
+    fn test_hello_rust() {
+        assert_eq!(hello("Rust"), "Hello, Rust!");
     }
 
     #[test]
-    fn test_input_digit() {
+    fn test_hello_wasm_browser() {
+        assert_eq!(hello("WebAssembly"), "Hello, WebAssembly!");
+    }
+
+    #[test]
+    fn test_hello_empty_string() {
+        assert_eq!(hello(""), "Hello, !");
+    }
+
+    #[test]
+    fn test_hello_long_string() {
+        let long_name = "a".repeat(1000);
+        let expected = format!("Hello, {}!", long_name);
+        assert_eq!(hello(&long_name), expected);
+    }
+}
+
+// The calculator tests are now moved to their respective modules
+// in tests/calculator/operations_tests.rs and tests/calculator/memory_tests.rs
+
+================
+File: tests/calculator/memory_tests.rs
+================
+//! Tests for calculator memory operations.
+//!
+//! This module contains unit tests for the memory-related operations:
+//! - Store a value in memory
+//! - Recall the current memory value
+//! - Clear the memory
+//! - Add to memory
+//! - Subtract from memory
+
+use rust_wasm_calc::calculator::{
+    memory_store, memory_recall, memory_clear, memory_add, memory_subtract
+};
+
+/// Tests for basic memory operations (store, recall, clear).
+#[cfg(test)]
+mod basic_memory_tests {
+    use super::*;
+
+    #[test]
+    fn test_memory_store_and_recall() {
+        // Store a value and recall it
+        memory_store(42.0);
+        assert_eq!(memory_recall(), 42.0);
+
+        // Store a different value and recall it
+        memory_store(123.456);
+        assert_eq!(memory_recall(), 123.456);
+
+        // Store a negative value and recall it
+        memory_store(-789.0);
+        assert_eq!(memory_recall(), -789.0);
+    }
+
+    #[test]
+    fn test_memory_clear() {
+        // Store a value
+        memory_store(42.0);
+        assert_eq!(memory_recall(), 42.0);
+
+        // Clear memory and verify it's zero
+        memory_clear();
+        assert_eq!(memory_recall(), 0.0);
+
+        // Store another value
+        memory_store(99.9);
+        assert_eq!(memory_recall(), 99.9);
+
+        // Clear again
+        memory_clear();
+        assert_eq!(memory_recall(), 0.0);
+    }
+
+    #[test]
+    fn test_memory_initial_value() {
+        // Clear memory to ensure a known state
+        memory_clear();
+        
+        // Memory should be initialized to 0.0
+        assert_eq!(memory_recall(), 0.0);
+    }
+}
+
+/// Tests for memory arithmetic operations (add, subtract).
+#[cfg(test)]
+mod memory_arithmetic_tests {
+    use super::*;
+
+    #[test]
+    fn test_memory_add() {
+        // Clear memory to ensure a known state
+        memory_clear();
+        assert_eq!(memory_recall(), 0.0);
+
+        // Add a value to memory
+        memory_add(5.0);
+        assert_eq!(memory_recall(), 5.0);
+
+        // Add another value
+        memory_add(3.0);
+        assert_eq!(memory_recall(), 8.0);
+
+        // Add a negative value
+        memory_add(-2.0);
+        assert_eq!(memory_recall(), 6.0);
+    }
+
+    #[test]
+    fn test_memory_subtract() {
+        // Clear memory and set initial value
+        memory_clear();
+        memory_store(10.0);
+        assert_eq!(memory_recall(), 10.0);
+
+        // Subtract a value
+        memory_subtract(3.0);
+        assert_eq!(memory_recall(), 7.0);
+
+        // Subtract another value
+        memory_subtract(2.0);
+        assert_eq!(memory_recall(), 5.0);
+
+        // Subtract a negative value (which adds)
+        memory_subtract(-5.0);
+        assert_eq!(memory_recall(), 10.0);
+    }
+
+    #[test]
+    fn test_memory_combined_operations() {
+        // Clear memory to ensure a known state
+        memory_clear();
+        
+        // Perform a series of operations
+        memory_add(10.0);
+        memory_subtract(5.0);
+        memory_add(7.0);
+        memory_subtract(2.0);
+        
+        // Verify final result
+        assert_eq!(memory_recall(), 10.0);
+        
+        // Clear and verify
+        memory_clear();
+        assert_eq!(memory_recall(), 0.0);
+    }
+}
+
+/// Tests for edge cases in memory operations.
+#[cfg(test)]
+mod memory_edge_cases {
+    use super::*;
+
+    #[test]
+    fn test_memory_floating_point() {
+        memory_clear();
+        
+        // Test with floating point values
+        memory_store(0.1);
+        memory_add(0.2);
+        
+        // Due to floating point precision, this won't be exactly 0.3
+        assert_eq!(memory_recall(), 0.30000000000000004);
+    }
+
+    #[test]
+    fn test_memory_large_values() {
+        memory_clear();
+        
+        // Test with very large values
+        let large_value = 1.0e100;
+        memory_store(large_value);
+        assert_eq!(memory_recall(), large_value);
+        
+        // Add another large value
+        memory_add(large_value);
+        assert_eq!(memory_recall(), 2.0 * large_value);
+    }
+
+    #[test]
+    fn test_memory_small_values() {
+        memory_clear();
+        
+        // Test with very small values
+        let small_value = 1.0e-100;
+        memory_store(small_value);
+        assert_eq!(memory_recall(), small_value);
+        
+        // Add another small value
+        memory_add(small_value);
+        assert_eq!(memory_recall(), 2.0 * small_value);
+    }
+}
+
+================
+File: tests/calculator/operations_tests.rs
+================
+//! Tests for calculator operations.
+//!
+//! This module contains unit tests for the basic arithmetic operations:
+//! - Addition
+//! - Subtraction
+//! - Multiplication
+//! - Division
+
+use rust_wasm_calc::calculator::{add, subtract, multiply, divide};
+
+/// Tests for the add function.
+#[cfg(test)]
+mod add_tests {
+    use super::*;
+
+    #[test]
+    fn test_add_positive_numbers() {
+        assert_eq!(add(2.0, 3.0), 5.0);
+        assert_eq!(add(0.0, 5.0), 5.0);
+        assert_eq!(add(100.0, 50.0), 150.0);
+    }
+
+    #[test]
+    fn test_add_negative_numbers() {
+        assert_eq!(add(-2.0, -3.0), -5.0);
+        assert_eq!(add(-5.0, 0.0), -5.0);
+        assert_eq!(add(-10.0, -20.0), -30.0);
+    }
+
+    #[test]
+    fn test_add_mixed_signs() {
+        assert_eq!(add(5.0, -3.0), 2.0);
+        assert_eq!(add(-5.0, 8.0), 3.0);
+        assert_eq!(add(-10.0, 10.0), 0.0);
+    }
+
+    #[test]
+    fn test_add_floating_point() {
+        assert_eq!(add(0.1, 0.2), 0.30000000000000004); // Floating point precision
+        assert_eq!(add(1.5, 2.5), 4.0);
+        assert_eq!(add(0.5, -0.5), 0.0);
+    }
+}
+
+/// Tests for the subtract function.
+#[cfg(test)]
+mod subtract_tests {
+    use super::*;
+
+    #[test]
+    fn test_subtract_positive_numbers() {
+        assert_eq!(subtract(5.0, 3.0), 2.0);
+        assert_eq!(subtract(10.0, 5.0), 5.0);
+        assert_eq!(subtract(5.0, 0.0), 5.0);
+    }
+
+    #[test]
+    fn test_subtract_negative_numbers() {
+        assert_eq!(subtract(-5.0, -3.0), -2.0);
+        assert_eq!(subtract(-10.0, -15.0), 5.0);
+        assert_eq!(subtract(-5.0, 0.0), -5.0);
+    }
+
+    #[test]
+    fn test_subtract_mixed_signs() {
+        assert_eq!(subtract(5.0, -3.0), 8.0);
+        assert_eq!(subtract(-5.0, 3.0), -8.0);
+        assert_eq!(subtract(0.0, -5.0), 5.0);
+    }
+
+    #[test]
+    fn test_subtract_floating_point() {
+        assert_eq!(subtract(0.3, 0.1), 0.19999999999999998); // Floating point precision
+        assert_eq!(subtract(10.5, 5.5), 5.0);
+        assert_eq!(subtract(1.0, 1.0), 0.0);
+    }
+}
+
+/// Tests for the multiply function.
+#[cfg(test)]
+mod multiply_tests {
+    use super::*;
+
+    #[test]
+    fn test_multiply_positive_numbers() {
+        assert_eq!(multiply(2.0, 3.0), 6.0);
+        assert_eq!(multiply(0.0, 5.0), 0.0);
+        assert_eq!(multiply(10.0, 10.0), 100.0);
+    }
+
+    #[test]
+    fn test_multiply_negative_numbers() {
+        assert_eq!(multiply(-2.0, -3.0), 6.0);
+        assert_eq!(multiply(-5.0, 0.0), 0.0);
+        assert_eq!(multiply(-10.0, -10.0), 100.0);
+    }
+
+    #[test]
+    fn test_multiply_mixed_signs() {
+        assert_eq!(multiply(5.0, -3.0), -15.0);
+        assert_eq!(multiply(-5.0, 3.0), -15.0);
+        assert_eq!(multiply(0.0, -5.0), 0.0);
+    }
+
+    #[test]
+    fn test_multiply_floating_point() {
+        assert_eq!(multiply(0.1, 0.2), 0.020000000000000004); // Floating point precision
+        assert_eq!(multiply(1.5, 2.0), 3.0);
+        assert_eq!(multiply(0.5, -2.0), -1.0);
+    }
+}
+
+/// Tests for the divide function.
+#[cfg(test)]
+mod divide_tests {
+    use super::*;
+
+    #[test]
+    fn test_divide_positive_numbers() {
+        let result = divide(6.0, 3.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2.0);
+
+        let result = divide(10.0, 2.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 5.0);
+    }
+
+    #[test]
+    fn test_divide_negative_numbers() {
+        let result = divide(-6.0, -3.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2.0);
+
+        let result = divide(-10.0, -2.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 5.0);
+    }
+
+    #[test]
+    fn test_divide_mixed_signs() {
+        let result = divide(6.0, -3.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), -2.0);
+
+        let result = divide(-10.0, 2.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), -5.0);
+    }
+
+    #[test]
+    fn test_divide_by_zero() {
+        let result = divide(5.0, 0.0);
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert_eq!(error.message(), "Division by zero");
+    }
+
+    #[test]
+    fn test_divide_floating_point() {
+        let result = divide(1.0, 3.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1.0 / 3.0);
+
+        let result = divide(5.5, 2.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2.75);
+    }
+}
+
+================
+File: tests/state/mod.rs
+================
+//! Tests for calculator state management.
+//!
+//! This module contains tests for the calculator state management functionality:
+//! - State initialization
+//! - State operations
+//! - State transitions
+
+// Re-export test modules
+pub mod types_tests;
+pub mod operations_tests;
+
+// Integration tests that combine multiple state operations
+#[cfg(test)]
+mod integration_tests {
+    use rust_wasm_calc::state::types::CalculatorState;
+    use rust_wasm_calc::state::types::Operation;
+
+    #[test]
+    fn test_full_calculation_sequence() {
         let mut state = CalculatorState::new();
         
-        // Test single digit input
-        state.input_digit(5);
-        assert_eq!(state.display_value, "5");
+        // Initial state check
+        assert_eq!(state.display_value(), "0");
         
-        // Test multiple digit input
+        // Input first number: 5
+        state.input_digit(5);
+        assert_eq!(state.display_value(), "5");
+        
+        // Set addition operation
+        state.set_operation(Operation::Add);
+        
+        // Input second number: 3
         state.input_digit(3);
-        assert_eq!(state.display_value, "53");
+        assert_eq!(state.display_value(), "3");
         
-        // Test clear on next input
-        state.clear_on_next_input = true;
-        state.input_digit(7);
-        assert_eq!(state.display_value, "7");
-        assert_eq!(state.clear_on_next_input, false);
-    }
-
-    #[test]
-    fn test_input_decimal() {
-        let mut state = CalculatorState::new();
+        // Calculate result
+        state.calculate();
+        assert_eq!(state.display_value(), "8");
         
-        // Test adding decimal to zero
-        state.input_decimal();
-        assert_eq!(state.display_value, "0.");
-        
-        // Test adding digits after decimal
-        state.input_digit(5);
-        assert_eq!(state.display_value, "0.5");
-        
-        // Test that second decimal is ignored
-        state.input_decimal();
-        assert_eq!(state.display_value, "0.5");
-    }
-
-    #[test]
-    fn test_toggle_sign() {
-        let mut state = CalculatorState::new();
-        
-        // Test toggling sign on zero (should remain zero)
-        state.toggle_sign();
-        assert_eq!(state.display_value, "0");
-        
-        // Test toggling sign on positive number
-        state.input_digit(5);
-        state.toggle_sign();
-        assert_eq!(state.display_value, "-5");
-        
-        // Test toggling sign on negative number
-        state.toggle_sign();
-        assert_eq!(state.display_value, "5");
-    }
-
-    #[test]
-    fn test_backspace() {
-        let mut state = CalculatorState::new();
-        
-        // Test backspace on single digit (should become zero)
-        state.input_digit(5);
-        state.backspace();
-        assert_eq!(state.display_value, "0");
-        
-        // Test backspace on multiple digits
-        state.input_digit(1);
+        // Continue calculation with multiplication
+        state.set_operation(Operation::Multiply);
         state.input_digit(2);
-        state.input_digit(3);
-        state.backspace();
-        assert_eq!(state.display_value, "12");
+        state.calculate();
+        
+        // Final result should be 8 * 2 = 16
+        assert_eq!(state.display_value(), "16");
     }
+
+    #[test]
+    fn test_error_handling_and_recovery() {
+        let mut state = CalculatorState::new();
+        
+        // Set up division by zero
+        state.input_digit(5);
+        state.set_operation(Operation::Divide);
+        state.input_digit(0);
+        
+        // Calculate should result in error
+        state.calculate();
+        assert!(state.display_value().contains("Error"));
+        
+        // Clear should recover from error state
+        state.clear();
+        assert_eq!(state.display_value(), "0");
+        
+        // Should be able to perform calculations again
+        state.input_digit(7);
+        state.set_operation(Operation::Add);
+        state.input_digit(3);
+        state.calculate();
+        assert_eq!(state.display_value(), "10");
+    }
+}
+
+================
+File: tests/state/operations_tests.rs
+================
+//! Tests for calculator state operations.
+//!
+//! This module contains tests for the state operations:
+//! - Clearing the calculator
+//! - Inputting digits and decimal points
+//! - Setting operations
+//! - Calculating results
+//! - Handling errors
+
+use rust_wasm_calc::state::types::{CalculatorState, Operation};
+
+/// Tests for basic state operations (clear, clear_entry).
+#[cfg(test)]
+mod basic_operations_tests {
+    use super::*;
 
     #[test]
     fn test_clear() {
         let mut state = CalculatorState::new();
         
-        // Set up a non-default state
+        // Set up some state
         state.input_digit(5);
         state.set_operation(Operation::Add);
         state.input_digit(3);
         
-        // Test clear
+        // Clear should reset everything
         state.clear();
-        assert_eq!(state.display_value, "0");
-        assert_eq!(state.first_operand, None);
-        assert_eq!(state.current_operation, Operation::None);
-        assert_eq!(state.clear_on_next_input, false);
+        
+        // Check that state is reset
+        assert_eq!(state.display_value(), "0");
+        
+        // Internal state checks (using debug representation)
+        let debug_str = format!("{:?}", state);
+        assert!(debug_str.contains("display_value: \"0\""));
+        assert!(debug_str.contains("first_operand: None"));
+        assert!(debug_str.contains("current_operation: None"));
+        assert!(debug_str.contains("clear_on_next_input: false"));
+        assert!(debug_str.contains("last_pressed_operation: false"));
+        assert!(debug_str.contains("error_state: false"));
     }
 
     #[test]
     fn test_clear_entry() {
         let mut state = CalculatorState::new();
         
-        // Set up a calculation
+        // Set up some state
         state.input_digit(5);
         state.set_operation(Operation::Add);
         state.input_digit(3);
         
-        // Test clear entry (should only clear current entry)
+        // Clear entry should only reset the current entry
         state.clear_entry();
-        assert_eq!(state.display_value, "0");
-        assert_eq!(state.first_operand, Some(5.0));
-        assert_eq!(state.current_operation, Operation::Add);
+        
+        // Display should be reset to 0
+        assert_eq!(state.display_value(), "0");
+        
+        // But operation should still be set
+        let debug_str = format!("{:?}", state);
+        assert!(debug_str.contains("current_operation: Add"));
+    }
+}
+
+/// Tests for digit input operations.
+#[cfg(test)]
+mod input_operations_tests {
+    use super::*;
+
+    #[test]
+    fn test_input_digit() {
+        let mut state = CalculatorState::new();
+        
+        // Input a single digit
+        state.input_digit(5);
+        assert_eq!(state.display_value(), "5");
+        
+        // Input another digit (should append)
+        state.input_digit(3);
+        assert_eq!(state.display_value(), "53");
+        
+        // Input more digits
+        state.input_digit(0);
+        state.input_digit(1);
+        assert_eq!(state.display_value(), "5301");
+    }
+
+    #[test]
+    fn test_input_digit_after_operation() {
+        let mut state = CalculatorState::new();
+        
+        // Input first number
+        state.input_digit(5);
+        assert_eq!(state.display_value(), "5");
+        
+        // Set operation
+        state.set_operation(Operation::Add);
+        
+        // Input second number (should start fresh)
+        state.input_digit(3);
+        assert_eq!(state.display_value(), "3");
+    }
+
+    #[test]
+    fn test_input_decimal() {
+        let mut state = CalculatorState::new();
+        
+        // Input a decimal point
+        state.input_decimal();
+        assert_eq!(state.display_value(), "0.");
+        
+        // Input digits after decimal
+        state.input_digit(5);
+        assert_eq!(state.display_value(), "0.5");
+        
+        // Input more digits
+        state.input_digit(2);
+        state.input_digit(3);
+        assert_eq!(state.display_value(), "0.523");
+        
+        // Second decimal should be ignored
+        state.input_decimal();
+        assert_eq!(state.display_value(), "0.523");
+    }
+
+    #[test]
+    fn test_toggle_sign() {
+        let mut state = CalculatorState::new();
+        
+        // Input a number
+        state.input_digit(5);
+        assert_eq!(state.display_value(), "5");
+        
+        // Toggle sign
+        state.toggle_sign();
+        assert_eq!(state.display_value(), "-5");
+        
+        // Toggle sign again
+        state.toggle_sign();
+        assert_eq!(state.display_value(), "5");
+        
+        // Test with decimal
+        state.clear();
+        state.input_digit(1);
+        state.input_decimal();
+        state.input_digit(5);
+        assert_eq!(state.display_value(), "1.5");
+        
+        state.toggle_sign();
+        assert_eq!(state.display_value(), "-1.5");
+    }
+
+    #[test]
+    fn test_backspace() {
+        let mut state = CalculatorState::new();
+        
+        // Input a number
+        state.input_digit(5);
+        state.input_digit(4);
+        state.input_digit(3);
+        assert_eq!(state.display_value(), "543");
+        
+        // Backspace
+        state.backspace();
+        assert_eq!(state.display_value(), "54");
+        
+        // Backspace again
+        state.backspace();
+        assert_eq!(state.display_value(), "5");
+        
+        // Backspace to empty (should show 0)
+        state.backspace();
+        assert_eq!(state.display_value(), "0");
+        
+        // Backspace on 0 should still be 0
+        state.backspace();
+        assert_eq!(state.display_value(), "0");
+    }
+}
+
+/// Tests for arithmetic operations.
+#[cfg(test)]
+mod arithmetic_operations_tests {
+    use super::*;
+
+    #[test]
+    fn test_set_operation() {
+        let mut state = CalculatorState::new();
+        
+        // Input a number
+        state.input_digit(5);
+        
+        // Set operation
+        state.set_operation(Operation::Add);
+        
+        // Internal state should have the operation set
+        let debug_str = format!("{:?}", state);
+        assert!(debug_str.contains("current_operation: Add"));
+        assert!(debug_str.contains("first_operand: Some(5"));
     }
 
     #[test]
     fn test_addition() {
         let mut state = CalculatorState::new();
         
+        // 5 + 3 = 8
         state.input_digit(5);
         state.set_operation(Operation::Add);
         state.input_digit(3);
         state.calculate();
         
-        assert_eq!(state.display_value, "8");
+        assert_eq!(state.display_value(), "8");
     }
 
     #[test]
     fn test_subtraction() {
         let mut state = CalculatorState::new();
         
-        state.input_digit(5);
+        // 10 - 4 = 6
+        state.input_digit(1);
+        state.input_digit(0);
         state.set_operation(Operation::Subtract);
-        state.input_digit(3);
+        state.input_digit(4);
         state.calculate();
         
-        assert_eq!(state.display_value, "2");
+        assert_eq!(state.display_value(), "6");
     }
 
     #[test]
     fn test_multiplication() {
         let mut state = CalculatorState::new();
         
-        state.input_digit(5);
+        // 6 * 7 = 42
+        state.input_digit(6);
         state.set_operation(Operation::Multiply);
-        state.input_digit(3);
+        state.input_digit(7);
         state.calculate();
         
-        assert_eq!(state.display_value, "15");
+        assert_eq!(state.display_value(), "42");
     }
 
     #[test]
     fn test_division() {
         let mut state = CalculatorState::new();
         
-        state.input_digit(6);
+        // 10 / 2 = 5
+        state.input_digit(1);
+        state.input_digit(0);
         state.set_operation(Operation::Divide);
-        state.input_digit(3);
+        state.input_digit(2);
         state.calculate();
         
-        assert_eq!(state.display_value, "2");
+        assert_eq!(state.display_value(), "5");
     }
 
     #[test]
     fn test_division_by_zero() {
         let mut state = CalculatorState::new();
         
+        // 5 / 0 = Error
         state.input_digit(5);
         state.set_operation(Operation::Divide);
         state.input_digit(0);
         state.calculate();
         
-        assert_eq!(state.display_value, "Error");
-        assert_eq!(state.error_state, true);
+        // Should show error
+        assert!(state.display_value().contains("Error"));
+        
+        // Error state should be set
+        let debug_str = format!("{:?}", state);
+        assert!(debug_str.contains("error_state: true"));
     }
 
     #[test]
-    fn test_operation_chaining() {
+    fn test_chained_operations() {
         let mut state = CalculatorState::new();
         
+        // 5 + 3 = 8
         state.input_digit(5);
         state.set_operation(Operation::Add);
         state.input_digit(3);
+        state.calculate();
+        assert_eq!(state.display_value(), "8");
+        
+        // 8 * 2 = 16
         state.set_operation(Operation::Multiply);
         state.input_digit(2);
         state.calculate();
+        assert_eq!(state.display_value(), "16");
         
-        assert_eq!(state.display_value, "16");
-    }
-
-    #[wasm_bindgen_test]
-    fn test_calculator_state_wasm() {
-        let mut state = CalculatorState::new();
+        // 16 - 6 = 10
+        state.set_operation(Operation::Subtract);
+        state.input_digit(6);
+        state.calculate();
+        assert_eq!(state.display_value(), "10");
         
-        state.input_digit(7);
-        state.input_digit(5);
-        assert_eq!(state.display_value(), "75");
-        
-        state.set_operation(Operation::Add);
-        state.input_digit(2);
+        // 10 / 5 = 2
+        state.set_operation(Operation::Divide);
         state.input_digit(5);
         state.calculate();
+        assert_eq!(state.display_value(), "2");
+    }
+}
+
+================
+File: tests/state/types_tests.rs
+================
+//! Tests for calculator state type definitions.
+//!
+//! This module contains tests for the state type definitions:
+//! - CalculatorState struct
+//! - Operation enum
+
+use rust_wasm_calc::state::types::{CalculatorState, Operation};
+
+/// Tests for the CalculatorState struct initialization and basic properties.
+#[cfg(test)]
+mod calculator_state_tests {
+    use super::*;
+
+    #[test]
+    fn test_calculator_state_new() {
+        let state = CalculatorState::new();
         
-        assert_eq!(state.display_value(), "100");
+        // Check initial values
+        assert_eq!(state.display_value(), "0");
+        
+        // Internal state checks (using debug representation)
+        let debug_str = format!("{:?}", state);
+        assert!(debug_str.contains("display_value: \"0\""));
+        assert!(debug_str.contains("first_operand: None"));
+        assert!(debug_str.contains("current_operation: None"));
+        assert!(debug_str.contains("clear_on_next_input: false"));
+        assert!(debug_str.contains("last_pressed_operation: false"));
+        assert!(debug_str.contains("error_state: false"));
+    }
+    
+    #[test]
+    fn test_display_value_getter() {
+        let state = CalculatorState::new();
+        assert_eq!(state.display_value(), "0");
+    }
+}
+
+/// Tests for the Operation enum.
+#[cfg(test)]
+mod operation_enum_tests {
+    use super::*;
+
+    #[test]
+    fn test_operation_equality() {
+        assert_eq!(Operation::None, Operation::None);
+        assert_eq!(Operation::Add, Operation::Add);
+        assert_eq!(Operation::Subtract, Operation::Subtract);
+        assert_eq!(Operation::Multiply, Operation::Multiply);
+        assert_eq!(Operation::Divide, Operation::Divide);
+        
+        assert_ne!(Operation::None, Operation::Add);
+        assert_ne!(Operation::Add, Operation::Subtract);
+        assert_ne!(Operation::Subtract, Operation::Multiply);
+        assert_ne!(Operation::Multiply, Operation::Divide);
+        assert_ne!(Operation::Divide, Operation::None);
+    }
+    
+    #[test]
+    fn test_operation_copy() {
+        let op1 = Operation::Add;
+        let op2 = op1;
+        
+        // Both should be valid after copy
+        assert_eq!(op1, Operation::Add);
+        assert_eq!(op2, Operation::Add);
+    }
+    
+    #[test]
+    fn test_operation_debug() {
+        assert_eq!(format!("{:?}", Operation::None), "None");
+        assert_eq!(format!("{:?}", Operation::Add), "Add");
+        assert_eq!(format!("{:?}", Operation::Subtract), "Subtract");
+        assert_eq!(format!("{:?}", Operation::Multiply), "Multiply");
+        assert_eq!(format!("{:?}", Operation::Divide), "Divide");
     }
 }
 
@@ -2967,8 +3929,11 @@ File: tests/web.rs
 
 use wasm_bindgen_test::*;
 use rust_wasm_calc::hello;
-use wasm_bindgen::JsValue;
-use wasm_bindgen_futures::JsFuture;
+use rust_wasm_calc::calculator::{
+    add, subtract, multiply, divide_wasm,
+    memory_store, memory_recall, memory_clear, memory_add, memory_subtract
+};
+use rust_wasm_calc::state::types::{CalculatorState, Operation};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -3113,6 +4078,82 @@ async fn test_concurrent_calls() {
     assert_eq!(counter.load(Ordering::SeqCst), 5);
 }
 
+/// Tests calculator operations in a browser environment.
+///
+/// This test verifies that:
+/// - Basic arithmetic operations work through WASM
+/// - Results are correctly returned to JavaScript
+#[wasm_bindgen_test]
+fn test_calculator_operations() {
+    assert_eq!(add(2.0, 3.0), 5.0);
+    assert_eq!(subtract(5.0, 3.0), 2.0);
+    assert_eq!(multiply(2.0, 3.0), 6.0);
+    
+    // Test division with valid input
+    let result = divide_wasm(6.0, 3.0);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), 2.0);
+    
+    // Test division by zero
+    let error = divide_wasm(1.0, 0.0);
+    assert!(error.is_err());
+}
+
+/// Tests memory operations in a browser environment.
+///
+/// This test verifies that:
+/// - Memory operations work through WASM
+/// - Memory state is maintained between calls
+#[wasm_bindgen_test]
+fn test_memory_operations() {
+    // Clear memory to ensure a known state
+    memory_clear();
+    assert_eq!(memory_recall(), 0.0);
+    
+    // Store and recall
+    memory_store(42.0);
+    assert_eq!(memory_recall(), 42.0);
+    
+    // Add to memory
+    memory_add(8.0);
+    assert_eq!(memory_recall(), 50.0);
+    
+    // Subtract from memory
+    memory_subtract(10.0);
+    assert_eq!(memory_recall(), 40.0);
+    
+    // Clear again
+    memory_clear();
+    assert_eq!(memory_recall(), 0.0);
+}
+
+/// Tests calculator state management in a browser environment.
+///
+/// This test verifies that:
+/// - CalculatorState can be created and manipulated through WASM
+/// - State operations work correctly in the browser
+#[wasm_bindgen_test]
+fn test_calculator_state() {
+    let mut state = CalculatorState::new();
+    
+    // Initial state
+    assert_eq!(state.display_value(), "0");
+    
+    // Input a number
+    state.input_digit(5);
+    assert_eq!(state.display_value(), "5");
+    
+    // Perform a calculation
+    state.set_operation(Operation::Add);
+    state.input_digit(3);
+    state.calculate();
+    assert_eq!(state.display_value(), "8");
+    
+    // Clear the state
+    state.clear();
+    assert_eq!(state.display_value(), "0");
+}
+
 ================
 File: .gitignore
 ================
@@ -3154,6 +4195,200 @@ File: .repomixignore
 # Example:
 # *.log
 # tmp/
+
+================
+File: ARCHITECTURE.md
+================
+# Rust WASM Calculator Architecture
+
+This document describes the architecture of the Rust WASM Calculator application, including the module organization, responsibilities, and the rationale for the design decisions.
+
+## Overview
+
+The Rust WASM Calculator is built using a hybrid architecture:
+
+1. **Rust Backend**: Core calculator logic compiled to WebAssembly
+2. **JavaScript Frontend**: UI components and interaction logic
+
+The application follows SOLID principles and maintains a clear separation of concerns between different components.
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Web Browser                          │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│                      HTML/CSS UI                            │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│                   JavaScript Modules                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ calculator.js│  │ controller.js│  │ events.js          │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+│         │                │                    │             │
+│  ┌──────▼──────┐  ┌──────▼──────┐  ┌──────────▼──────────┐  │
+│  │ display.js  │  │ memory.js   │  │ DOM Event Handlers  │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│                    WebAssembly Bridge                        │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────┐
+│                       Rust Modules                           │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ calculator  │  │ state       │  │ errors              │  │
+│  │ ┌─────────┐ │  │ ┌─────────┐ │  └─────────────────────┘  │
+│  │ │operations│ │  │ │types    │ │                          │
+│  │ └─────────┘ │  │ └─────────┘ │                          │
+│  │ ┌─────────┐ │  │ ┌─────────┐ │                          │
+│  │ │memory   │ │  │ │operations│ │                          │
+│  │ └─────────┘ │  │ └─────────┘ │                          │
+│  └─────────────┘  └─────────────┘                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Module Organization
+
+### Rust Backend
+
+#### 1. Calculator Module (`src/calculator/`)
+
+**Responsibility**: Core calculator functionality
+
+- **operations.rs**: Implements basic arithmetic operations (add, subtract, multiply, divide)
+- **memory.rs**: Manages calculator memory operations (store, recall, clear, add, subtract)
+- **mod.rs**: Exports the module's public interface
+
+#### 2. State Module (`src/state/`)
+
+**Responsibility**: Manages calculator state
+
+- **types.rs**: Defines the `Operation` enum and `CalculatorState` struct
+- **operations.rs**: Implements methods for the `CalculatorState` struct
+- **mod.rs**: Exports the module's public interface
+
+#### 3. Errors Module (`src/errors.rs`)
+
+**Responsibility**: Error handling
+
+- Defines error types and conversion functions
+- Provides JavaScript-friendly error handling
+
+#### 4. Library Entry Point (`src/lib.rs`)
+
+**Responsibility**: Main entry point for the WebAssembly module
+
+- Exports functions to JavaScript
+- Configures WebAssembly bindings
+
+### JavaScript Frontend
+
+#### 1. Main Module (`js/calculator.js`)
+
+**Responsibility**: Entry point for the JavaScript frontend
+
+- Initializes the calculator
+- Connects WASM functions to the UI
+
+#### 2. Controller Module (`js/calculator/controller.js`)
+
+**Responsibility**: Manages interaction between UI and WASM
+
+- Handles user input
+- Updates the display
+- Maintains calculator state
+
+#### 3. Events Module (`js/calculator/events.js`)
+
+**Responsibility**: Handles DOM events
+
+- Binds click events to calculator buttons
+- Manages keyboard input
+- Dynamically adds UI elements
+
+#### 4. Display Module (`js/calculator/display.js`)
+
+**Responsibility**: Manages the calculator display
+
+- Formats values for display
+- Updates the display element
+- Handles error display
+
+#### 5. Memory Module (`js/calculator/memory.js`)
+
+**Responsibility**: Interfaces with WASM memory functions
+
+- Provides a clean API for memory operations
+- Abstracts WASM memory functions
+
+## Test Organization
+
+### 1. Calculator Tests (`tests/calculator/`)
+
+- **operations_tests.rs**: Tests for arithmetic operations
+- **memory_tests.rs**: Tests for memory functions
+
+### 2. State Tests (`tests/state/`)
+
+- **types_tests.rs**: Tests for state type definitions
+- **operations_tests.rs**: Tests for state operations
+- **mod.rs**: Integration tests for state management
+
+### 3. WASM Integration Tests (`tests/web.rs`)
+
+- Tests for WASM-specific functionality
+- Browser environment tests
+
+## Refactoring Rationale
+
+The codebase was refactored to achieve the following goals:
+
+### 1. Separation of Concerns
+
+- **Before**: Monolithic code with mixed responsibilities
+- **After**: Clear separation between calculator operations, memory functions, state management, and error handling
+
+### 2. Improved Maintainability
+
+- **Before**: Changes to one part of the code could affect other parts
+- **After**: Modular structure allows for isolated changes
+
+### 3. Better Testability
+
+- **Before**: Difficult to test individual components
+- **After**: Each module can be tested independently
+
+### 4. Enhanced Readability
+
+- **Before**: Complex, intertwined code
+- **After**: Clear module boundaries and responsibilities
+
+### 5. Easier Extensibility
+
+- **Before**: Adding new features required modifying existing code
+- **After**: New features can be added by extending existing modules or adding new ones
+
+## Design Patterns
+
+The application uses several design patterns:
+
+1. **Module Pattern**: Organizes code into cohesive modules with clear responsibilities
+2. **Facade Pattern**: Provides a simplified interface to the complex subsystem (WASM functions)
+3. **Observer Pattern**: UI components react to state changes
+4. **Dependency Injection**: WASM functions are injected into the JavaScript modules
+
+## Future Considerations
+
+1. **State Management**: Consider using a more robust state management solution for complex state
+2. **Web Workers**: Move heavy calculations to web workers for better performance
+3. **Progressive Web App**: Add PWA capabilities for offline use
+4. **Accessibility**: Enhance keyboard navigation and screen reader support
+5. **Internationalization**: Add support for multiple languages
 
 ================
 File: Cargo.toml
@@ -3253,6 +4488,12 @@ File: custom.css
 ================
 /* Custom styles for WASM Calculator */
 
+/* General Layout */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Calculator Styles */
 .calculator-container {
     max-width: 400px;
     margin: auto;
@@ -3331,6 +4572,142 @@ kbd {
     color: #dc3545;
 }
 
+/* Navigation Styles */
+.navbar {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Landing Page Styles */
+#landing {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+}
+
+#landing .card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+}
+
+#landing .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+#landing .display-1 {
+    opacity: 0.9;
+}
+
+/* Chat Interface Styles */
+.chat-container {
+    max-width: 700px;
+    margin: auto;
+}
+
+.chat-container .card {
+    border-radius: 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.chat-messages {
+    height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.message {
+    margin-bottom: 1rem;
+    max-width: 80%;
+}
+
+.message.user {
+    margin-left: auto;
+}
+
+.message.assistant {
+    margin-right: auto;
+}
+
+.message-content {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+}
+
+.message.user .message-content {
+    background-color: #0d6efd;
+    color: white;
+    border-top-right-radius: 0;
+}
+
+.message.assistant .message-content {
+    background-color: #e9ecef;
+    color: #212529;
+    border-top-left-radius: 0;
+}
+
+.message-content p {
+    margin-bottom: 0;
+}
+
+.chat-input-container {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+#chat-form {
+    display: flex;
+}
+
+#chat-input {
+    border-radius: 1.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+#chat-form button {
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Footer Styles */
+footer {
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .calculator-container,
+    .chat-container {
+        max-width: 100%;
+    }
+    
+    .btn-calc {
+        height: 50px;
+    }
+    
+    #display {
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .chat-messages {
+        height: 300px;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
+}
+
 ================
 File: index.html
 ================
@@ -3347,107 +4724,223 @@ File: index.html
     <!-- Custom CSS -->
     <link href="custom.css" rel="stylesheet">
 </head>
-<body class="bg-light min-vh-100 d-flex align-items-center py-5">
-    <div class="container">
-        <div class="calculator-container">
-            <div class="card shadow">
-                <div class="card-header bg-dark text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>WASM Calculator</h5>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Sticky Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="bi bi-calculator me-2"></i>Rust WASM Calculator</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#landing">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#calculator">Calculator</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#chatbot">Chatbot</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow-1">
+        <!-- Landing Page -->
+        <section id="landing" class="py-5 bg-light">
+            <div class="container text-center">
+                <h1 class="display-4 mb-4">Welcome to Rust WASM Calculator</h1>
+                <p class="lead mb-5">Choose your preferred way to calculate</p>
+                
+                <div class="row justify-content-center g-4">
+                    <div class="col-md-5">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-calculator display-1 mb-3 text-primary"></i>
+                                <h3>Calculator Interface</h3>
+                                <p class="mb-4">Use our traditional calculator interface with keyboard support</p>
+                                <a href="#calculator" class="btn btn-primary">Open Calculator</a>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="card-body p-0">
-                    <div id="display" class="bg-light border-bottom">
-                        Loading WASM...
-                    </div>
-                    <div class="p-3">
-                        <div class="row g-2">
-                            <!-- Memory Operations -->
-                            <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">MC</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">MR</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">M+</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-secondary w-100 btn-calc">M-</button>
-                            </div>
-                            
-                            <!-- Clear and Operations -->
-                            <div class="col-6">
-                                <button class="btn btn-danger w-100 btn-calc">C</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-danger w-100 btn-calc">CE</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">/</button>
-                            </div>
-                            
-                            <!-- Numbers and Operations -->
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">7</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">8</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">9</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">×</button>
-                            </div>
-                            
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">4</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">5</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">6</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">-</button>
-                            </div>
-                            
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">1</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">2</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">3</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">+</button>
-                            </div>
-                            
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">±</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">0</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-light w-100 btn-calc">.</button>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">=</button>
+                    <div class="col-md-5">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center p-4">
+                                <i class="bi bi-chat-dots display-1 mb-3 text-success"></i>
+                                <h3>Chatbot Interface</h3>
+                                <p class="mb-4">Chat with our LLM-powered calculator assistant</p>
+                                <a href="#chatbot" class="btn btn-success">Open Chatbot</a>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-light text-center text-muted">
-                    <small>Press <kbd>Esc</kbd> to clear, <kbd>Enter</kbd> to calculate</small>
+            </div>
+        </section>
+
+        <!-- Calculator Section -->
+        <section id="calculator" class="py-5 d-none">
+            <div class="container">
+                <div class="calculator-container">
+                    <div class="card shadow">
+                        <div class="card-header bg-dark text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>WASM Calculator</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="display" class="bg-light border-bottom">
+                                Loading WASM...
+                            </div>
+                            <div class="p-3">
+                                <div class="row g-2">
+                                    <!-- Memory Operations -->
+                                    <div class="col-3">
+                                        <button class="btn btn-secondary w-100 btn-calc">MC</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-secondary w-100 btn-calc">MR</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-secondary w-100 btn-calc">M+</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-secondary w-100 btn-calc">M-</button>
+                                    </div>
+                                    
+                                    <!-- Clear and Operations -->
+                                    <div class="col-6">
+                                        <button class="btn btn-danger w-100 btn-calc">C</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-danger w-100 btn-calc">CE</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-calc">/</button>
+                                    </div>
+                                    
+                                    <!-- Numbers and Operations -->
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">7</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">8</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">9</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-calc">×</button>
+                                    </div>
+                                    
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">4</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">5</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">6</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-calc">-</button>
+                                    </div>
+                                    
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">1</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">2</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">3</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-calc">+</button>
+                                    </div>
+                                    
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">±</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">0</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-light w-100 btn-calc">.</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-success w-100 btn-calc">=</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center text-muted">
+                            <small>Press <kbd>Esc</kbd> to clear, <kbd>Enter</kbd> to calculate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chatbot Section -->
+        <section id="chatbot" class="py-5 d-none">
+            <div class="container">
+                <div class="chat-container">
+                    <div class="card shadow">
+                        <div class="card-header bg-dark text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Calculator Assistant</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="chat-messages" class="chat-messages">
+                                <div class="message assistant">
+                                    <div class="message-content">
+                                        <p>Hello! I'm your calculator assistant. Ask me to perform calculations or help with math problems.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-input-container">
+                                <form id="chat-form" class="d-flex">
+                                    <input type="text" id="chat-input" class="form-control" placeholder="Type your calculation or question..." aria-label="Message">
+                                    <button type="submit" class="btn btn-success ms-2">
+                                        <i class="bi bi-send"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Try asking: "Calculate 125 × 37" or "What's the area of a circle with radius 5?"</small>
+                                <div id="chat-status" class="text-success">
+                                    <small><i class="bi bi-check-circle"></i> Ready</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Sticky Footer -->
+    <footer class="bg-dark text-white py-3 mt-auto">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; 2023 Rust WASM Calculator</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="https://github.com/your-repo/rust-wasm-calc" class="text-white text-decoration-none" target="_blank">
+                        <i class="bi bi-github me-1"></i> View on GitHub
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
+    </footer>
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -3462,11 +4955,14 @@ File: index.html
             memory_subtract 
         } from './pkg/rust_wasm_calc.js';
         import { initCalculator } from './js/calculator.js';
+        import { initChatbot } from './js/chatbot.js';
+        import { initNavigation } from './js/navigation.js';
 
         // Initialize WASM
         async function run() {
             try {
-                const wasmModule = await init();
+                // Initialize the WASM module
+                await init();
                 
                 // Create an object with the calculator functions
                 const calculatorFunctions = {
@@ -3480,9 +4976,11 @@ File: index.html
                 // Initialize the calculator UI
                 initCalculator(calculatorFunctions);
                 
-                // Update the display to show it's ready
-                const display = document.getElementById('display');
-                display.textContent = "0";
+                // Initialize the chatbot UI
+                initChatbot(calculatorFunctions);
+                
+                // Initialize navigation
+                initNavigation();
             } catch (e) {
                 const display = document.getElementById('display');
                 display.textContent = `Error: ${e.message}`;
@@ -3532,7 +5030,7 @@ File: README.md
 
 ## Overview
 
-Rust WASM Calculator is a WebAssembly calculator application. It is built using Rust and Bootstrap 5. The project follows test-driven development practices.
+Rust WASM Calculator is a WebAssembly calculator application. It is built using Rust and Bootstrap 5. The project follows test-driven development practices and SOLID principles.
 
 ## 🚀 Quick Start
 
@@ -3559,6 +5057,43 @@ Rust WASM Calculator is a WebAssembly calculator application. It is built using 
 
 The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --target web` to generate the package in the `pkg/` directory.
 
+### Project Structure
+
+The codebase is organized into the following modules:
+
+#### Rust Backend
+
+- **calculator**: Core calculator functionality
+  - **operations.rs**: Basic arithmetic operations
+  - **memory.rs**: Memory-related functions
+  - **mod.rs**: Module exports and organization
+- **state**: State management for the calculator
+  - **types.rs**: Type definitions (Operation enum, CalculatorState struct)
+  - **operations.rs**: Methods for manipulating calculator state
+  - **mod.rs**: Module exports and organization
+- **errors.rs**: Error handling and standardized error types
+- **lib.rs**: Main library entry point and WebAssembly exports
+
+#### JavaScript Frontend
+
+- **js/calculator.js**: Main entry point for the calculator UI
+- **js/calculator/**: Modular JavaScript components
+  - **controller.js**: CalculatorController class for UI-WASM interaction
+  - **events.js**: Event handling for buttons and keyboard input
+  - **display.js**: Display formatting and updates
+  - **memory.js**: Memory operations interface
+
+#### Tests
+
+- **tests/calculator/**: Tests for calculator operations
+  - **operations_tests.rs**: Tests for arithmetic operations
+  - **memory_tests.rs**: Tests for memory functions
+- **tests/state/**: Tests for state management
+  - **types_tests.rs**: Tests for state type definitions
+  - **operations_tests.rs**: Tests for state operations
+  - **mod.rs**: Integration tests for state management
+- **tests/web.rs**: WASM-specific integration tests
+
 ### API
 
 #### `hello(name: &str) -> String`
@@ -3568,7 +5103,9 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `name`:  The name to include in the greeting.
 - **Returns:**  A string formatted as "Hello, {name}!".
 
-#### `add(a: f64, b: f64) -> f64`
+#### Calculator Operations
+
+##### `add(a: f64, b: f64) -> f64`
 
 - **Description:** Adds two numbers and returns the result.
 - **Parameters:**
@@ -3576,7 +5113,7 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `b`: Second operand
 - **Returns:** The sum of `a` and `b`
 
-#### `subtract(a: f64, b: f64) -> f64`
+##### `subtract(a: f64, b: f64) -> f64`
 
 - **Description:** Subtracts the second number from the first and returns the result.
 - **Parameters:**
@@ -3584,7 +5121,7 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `b`: Second operand
 - **Returns:** The difference `a - b`
 
-#### `multiply(a: f64, b: f64) -> f64`
+##### `multiply(a: f64, b: f64) -> f64`
 
 - **Description:** Multiplies two numbers and returns the result.
 - **Parameters:**
@@ -3592,7 +5129,7 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `b`: Second operand
 - **Returns:** The product of `a` and `b`
 
-#### `divide(a: f64, b: f64) -> Result<f64, String>`
+##### `divide(a: f64, b: f64) -> Result<f64, CalculatorError>`
 
 - **Description:** Divides the first number by the second and returns the result.
 - **Parameters:**
@@ -3600,7 +5137,7 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `b`: Divisor (denominator)
 - **Returns:** 
     - `Ok(result)`: The quotient `a / b` if successful
-    - `Err(message)`: An error message if division by zero is attempted
+    - `Err(error)`: A `CalculatorError` if division by zero is attempted
 
 #### Memory Functions
 
@@ -3610,43 +5147,91 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
 - **`memory_add(value: f64)`**: Adds a value to the current value stored in memory
 - **`memory_subtract(value: f64)`**: Subtracts a value from the current value stored in memory
 
+#### State Management
+
+The calculator uses a state management system to track the current state of the calculator:
+
+- **`CalculatorState`**: Main state container for the calculator
+  - **`display_value()`**: Gets the current display value
+  - **`input_digit(digit: u8)`**: Inputs a digit (0-9)
+  - **`input_decimal()`**: Inputs a decimal point
+  - **`toggle_sign()`**: Toggles the sign of the current value
+  - **`backspace()`**: Removes the last character
+  - **`set_operation(operation: Operation)`**: Sets the current operation
+  - **`calculate()`**: Performs the calculation
+  - **`clear()`**: Clears the calculator state
+  - **`clear_entry()`**: Clears the current entry
+
+- **`Operation`**: Enum representing different operations
+  - `None`: No operation
+  - `Add`: Addition
+  - `Subtract`: Subtraction
+  - `Multiply`: Multiplication
+  - `Divide`: Division
+
+#### Error Handling
+
+The calculator uses a standardized error handling system:
+
+- **`CalculatorErrorType`**: Enum representing different error types:
+  - `DivisionByZero`: Division by zero error
+  - `InvalidInput`: Invalid input error
+  - `Overflow`: Result too large
+  - `Underflow`: Result too small
+  - `CalculationError`: General calculation error
+
+- **`CalculatorError`**: Struct containing error type and message
+
+- **`error_to_js_string_by_type(error_type, message)`**: Converts error information to a JavaScript-friendly string
+
+### JavaScript Architecture
+
+The JavaScript frontend follows a modular architecture:
+
+1. **Main Module (`calculator.js`)**: 
+   - Initializes the calculator
+   - Connects WASM functions to the UI
+   - Serves as the entry point
+
+2. **Controller (`controller.js`)**: 
+   - Manages the interaction between UI and WASM
+   - Handles user input and updates the display
+   - Maintains the calculator state
+
+3. **Events (`events.js`)**: 
+   - Handles button click events
+   - Manages keyboard input
+   - Dynamically adds UI elements
+
+4. **Display (`display.js`)**: 
+   - Formats values for display
+   - Updates the display element
+   - Handles error display
+
+5. **Memory (`memory.js`)**: 
+   - Provides a clean interface to WASM memory functions
+   - Manages memory operations
+
 **Example Usage (JavaScript):**
 
 ```javascript
 import init, { hello, add, subtract, multiply, divide, memory_store, memory_recall } from './pkg/rust_wasm_calc.js';
+import { initCalculator } from './js/calculator.js';
 
 async function run() {
   await init();
   
-  // Basic greeting
-  const message = hello("User");
-  console.log(message); // Output: Hello, User!
+  // Create calculator functions object
+  const calculatorFunctions = {
+    memory_store,
+    memory_recall,
+    memory_clear,
+    memory_add,
+    memory_subtract
+  };
   
-  // Calculator operations
-  console.log(add(2, 3)); // Output: 5
-  console.log(subtract(5, 3)); // Output: 2
-  console.log(multiply(2, 3)); // Output: 6
-  
-  // Division with error handling
-  try {
-    const result = divide(6, 3);
-    if (result.err) {
-      console.error(result.err);
-    } else {
-      console.log(result.ok); // Output: 2
-    }
-  } catch (e) {
-    console.error(e);
-  }
-  
-  // Memory operations
-  memory_store(10);
-  memory_add(5);
-  console.log(memory_recall()); // Output: 15
-  memory_subtract(3);
-  console.log(memory_recall()); // Output: 12
-  memory_clear();
-  console.log(memory_recall()); // Output: 0
+  // Initialize the calculator UI
+  const calculator = initCalculator(calculatorFunctions);
 }
 
 run();
@@ -3716,7 +5301,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Calculator operations
 - [x] Memory functions
 - [x] Error handling
-- [ ] UI Interaction & State Management
+- [x] Modular code organization
+- [x] UI Interaction & State Management
 - [ ] LLM Chatbot Integration
 - [ ] Advanced Features & Refinement
 
@@ -3777,6 +5363,146 @@ File: repomix.config.json
     "encoding": "o200k_base"
   }
 }
+
+================
+File: TASKS_REFACTOR.md
+================
+# Refactoring Tasks
+
+Here's a structured list of detailed refactoring tasks, each sized to approximately one story point:
+
+## Rust Code Refactoring
+
+- [x] **R1.1 Create calculator module structure**
+  - [x] Create `src/calculator/mod.rs` file
+  - [x] Define module exports
+  - [x] Update `lib.rs` to use the new module structure
+  - [x] Verify build still works with `wasm-pack build --target web`
+
+- [x] **R1.2 Implement calculator operations module**
+  - [x] Create `src/calculator/operations.rs` file
+  - [x] Move all arithmetic functions from `lib.rs`
+  - [x] Ensure proper documentation is maintained
+  - [x] Update imports and exports
+
+- [x] **R1.3 Implement calculator memory module**
+  - [x] Create `src/calculator/memory.rs` file
+  - [x] Move memory functions from `lib.rs`
+  - [x] Maintain thread_local implementation
+  - [x] Ensure proper documentation
+
+- [x] **R1.4 Refactor state management structure**
+  - [x] Create `src/state/mod.rs` with proper exports
+  - [x] Update imports in other files
+  - [x] Verify the module is properly exposed through wasm-bindgen
+
+- [x] **R1.5 Split state management into type definitions**
+  - [x] Create `src/state/types.rs`
+  - [x] Move `Operation` enum and `CalculatorState` struct
+  - [x] Ensure wasm-bindgen attributes are preserved
+  - [x] Update imports in other files
+
+- [x] **R1.6 Split state management operations**
+  - [x] Create `src/state/operations.rs`
+  - [x] Move `CalculatorState` implementation methods
+  - [x] Maintain documentation and test coverage
+  - [x] Verify state operations work as before
+
+- [x] **R1.7 Create error handling module**
+  - [x] Create `src/errors.rs`
+  - [x] Define standard error types for calculator operations
+  - [x] Implement conversion between Rust errors and JavaScript-friendly errors
+  - [x] Update relevant functions to use the new error types
+
+## Test Organization
+
+- [x] **R2.1 Reorganize unit tests**
+  - [x] Move calculator operation tests to `tests/calculator/operations_tests.rs`
+  - [x] Move memory function tests to `tests/calculator/memory_tests.rs`
+  - [x] Update imports and test configuration
+  - [x] Verify all tests still pass
+
+- [x] **R2.2 Reorganize state management tests**
+  - [x] Move state tests to `tests/state/mod.rs`
+  - [x] Split tests based on functionality
+  - [x] Update imports and test configuration
+  - [x] Verify all tests still pass
+
+- [x] **R2.3 Update integration tests**
+  - [x] Review and update tests in `tests/web.rs`
+  - [x] Create additional test modules if needed
+  - [x] Ensure all WASM-specific tests are working
+  - [x] Check test coverage after refactoring
+
+## JavaScript Refactoring
+
+- [x] **R3.1 Create modular JavaScript structure**
+  - [x] Create directory structure for JS modules
+  - [x] Update import/export statements
+  - [x] Update `index.html` script references
+  - [x] Verify functionality after restructuring
+
+- [x] **R3.2 Split calculator controller**
+  - [x] Create `js/calculator/controller.js`
+  - [x] Move `CalculatorController` class implementation
+  - [x] Verify class methods work correctly
+  - [x] Update documentation
+
+- [x] **R3.3 Create event handler module**
+  - [x] Create `js/calculator/events.js`
+  - [x] Extract event handling logic from calculator.js
+  - [x] Implement clean event binding and delegation
+  - [x] Test keyboard and button event handling
+
+- [x] **R3.4 Create display module**
+  - [x] Create `js/calculator/display.js`
+  - [x] Extract display update logic
+  - [x] Implement formatting functions for calculator results
+  - [x] Test error state display handling
+
+- [x] **R3.5 Create memory operations module**
+  - [x] Create `js/calculator/memory.js`
+  - [x] Extract memory operations logic
+  - [x] Connect to WASM memory functions
+  - [x] Test memory button functionality
+
+## Documentation Updates
+
+- [x] **R4.1 Update module documentation**
+  - [x] Add module-level documentation (//!) for all new modules
+  - [x] Ensure documentation follows standards in documentation.mdc
+  - [x] Check cross-references between modules
+  - [x] Verify examples still compile
+
+- [x] **R4.2 Update README and project documentation**
+  - [x] Update module structure description in README
+  - [x] Update build and test instructions if needed
+  - [x] Document the refactored component architecture
+  - [x] Update API documentation to reflect new module structure
+
+- [x] **R4.3 Create architecture documentation**
+  - [x] Create an `ARCHITECTURE.md` file
+  - [x] Document the module organization and responsibility
+  - [x] Include component diagrams if helpful
+  - [x] Document the rationale for the refactoring
+
+## Final Verification
+
+- [x] **R5.1 End-to-end verification**
+  - [x] Build the full application
+  - [x] Run all tests to verify functionality
+  - [x] Test calculator in the browser
+  - [x] Check for any performance regressions
+  - [x] Verify documentation is up to date
+
+- [x] **R5.2 Code quality check**
+  - [x] Run Clippy on Rust code to catch any issues
+  - [x] Run ESLint on JavaScript code
+  - [x] Check for any duplicate code
+  - [x] Ensure code follows project style guidelines
+  - [x] Verify all files follow line length guidelines
+
+Each task is designed to be self-contained and achievable in a similar timeframe, focusing on different aspects of the refactoring process.
 
 ================
 File: TASKS.md
@@ -3858,19 +5584,19 @@ This roadmap outlines the development tasks to evolve the current Hello World pr
   - [x] Implement backspace/delete functionality
   - [x] Update display accordingly
 
-- [x] **2.7 Add keyboard input support**
+- [ ] **2.7 Add keyboard input support**
   - [x] Write tests for keyboard event handling
-  - [x] Implement key event listeners for calculator operations
-  - [x] Map number keys and operation keys to calculator functions
-  - [x] Follow web-interface.mdc accessibility guidelines
+  - [ ] Implement key event listeners for calculator operations
+  - [ ] Map number keys and operation keys to calculator functions
+  - [ ] Follow web-interface.mdc accessibility guidelines
 
 ## Phase 3: LLM Chatbot Integration
 
-- [ ] **3.1 Add chat interface to HTML**
-  - [ ] Design and implement chat UI component
-  - [ ] Add message display area and input field
-  - [ ] Style according to existing theme
-  - [ ] Follow web-interface.mdc rules for HTML/CSS
+- [x] **3.1 Add chat interface to HTML**
+  - [x] Design and implement chat UI component
+  - [x] Add message display area and input field
+  - [x] Style according to existing theme
+  - [x] Follow web-interface.mdc rules for HTML/CSS
 
 - [ ] **3.2 Write tests for LLM function calling interface**
   - [ ] Create tests for function definitions
@@ -3878,10 +5604,10 @@ This roadmap outlines the development tasks to evolve the current Hello World pr
   - [ ] Test function call handling
   - [ ] Follow testing.mdc rules
 
-- [ ] **3.3 Create JavaScript module for LLM integration**
-  - [ ] Implement calculator function definitions
-  - [ ] Set up message and conversation handling
-  - [ ] Document according to js/**.js rules in documentation.mdc
+- [x] **3.3 Create JavaScript module for LLM integration**
+  - [x] Implement calculator function definitions
+  - [x] Set up message and conversation handling
+  - [x] Document according to js/**.js rules in documentation.mdc
 
 - [ ] **3.4 Implement API connection to chosen LLM**
   - [ ] Set up API call structure
@@ -3894,15 +5620,15 @@ This roadmap outlines the development tasks to evolve the current Hello World pr
   - [ ] Create bridge between LLM responses and calculator API
   - [ ] Add error handling for malformed function calls
 
-- [ ] **3.6 Connect chat UI to LLM module**
-  - [ ] Implement send button functionality
-  - [ ] Display user and assistant messages
-  - [ ] Show calculation results in both chat and calculator display
+- [x] **3.6 Connect chat UI to LLM module**
+  - [x] Implement send button functionality
+  - [x] Display user and assistant messages
+  - [x] Show calculation results in both chat and calculator display
 
-- [ ] **3.7 Implement conversation history management**
-  - [ ] Create storage for chat history
-  - [ ] Add method to update and retrieve conversation context
-  - [ ] Ensure context is properly passed to LLM API
+- [x] **3.7 Implement conversation history management**
+  - [x] Create storage for chat history
+  - [x] Add method to update and retrieve conversation context
+  - [x] Ensure context is properly passed to LLM API
 
 ## Phase 4: Advanced Features & Refinement
 
