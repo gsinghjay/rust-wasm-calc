@@ -181,6 +181,21 @@ export class CalculatorController {
    * @param {KeyboardEvent} event - The keyboard event
    */
   handleKeyDown(event) {
+    // Completely disabled to prevent interference with chatbot input
+    return;
+    
+    /* Original implementation:
+    // Only handle keyboard events when the calculator section is active
+    const calculatorSection = document.getElementById('calculator');
+    if (calculatorSection && calculatorSection.classList.contains('d-none')) {
+      return; // Calculator is not visible, don't handle keyboard events
+    }
+    
+    // Don't handle keyboard events if the focus is on an input element
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+      return;
+    }
+    
     // Prevent default behavior for calculator keys
     if (
       (event.key >= '0' && event.key <= '9') ||
@@ -216,5 +231,6 @@ export class CalculatorController {
     } else if (event.key === 'Backspace') {
       this.handleBackspace();
     }
+    */
   }
 } 

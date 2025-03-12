@@ -75,19 +75,19 @@ This roadmap outlines the development tasks to evolve the current Hello World pr
   - [x] Implement backspace/delete functionality
   - [x] Update display accordingly
 
-- [x] **2.7 Add keyboard input support**
+- [ ] **2.7 Add keyboard input support**
   - [x] Write tests for keyboard event handling
-  - [x] Implement key event listeners for calculator operations
-  - [x] Map number keys and operation keys to calculator functions
-  - [x] Follow web-interface.mdc accessibility guidelines
+  - [ ] Implement key event listeners for calculator operations
+  - [ ] Map number keys and operation keys to calculator functions
+  - [ ] Follow web-interface.mdc accessibility guidelines
 
 ## Phase 3: LLM Chatbot Integration
 
-- [ ] **3.1 Add chat interface to HTML**
-  - [ ] Design and implement chat UI component
-  - [ ] Add message display area and input field
-  - [ ] Style according to existing theme
-  - [ ] Follow web-interface.mdc rules for HTML/CSS
+- [x] **3.1 Add chat interface to HTML**
+  - [x] Design and implement chat UI component
+  - [x] Add message display area and input field
+  - [x] Style according to existing theme
+  - [x] Follow web-interface.mdc rules for HTML/CSS
 
 - [ ] **3.2 Write tests for LLM function calling interface**
   - [ ] Create tests for function definitions
@@ -95,10 +95,10 @@ This roadmap outlines the development tasks to evolve the current Hello World pr
   - [ ] Test function call handling
   - [ ] Follow testing.mdc rules
 
-- [ ] **3.3 Create JavaScript module for LLM integration**
-  - [ ] Implement calculator function definitions
-  - [ ] Set up message and conversation handling
-  - [ ] Document according to js/**.js rules in documentation.mdc
+- [x] **3.3 Create JavaScript module for LLM integration**
+  - [x] Implement calculator function definitions
+  - [x] Set up message and conversation handling
+  - [x] Document according to js/**.js rules in documentation.mdc
 
 - [ ] **3.4 Implement API connection to chosen LLM**
   - [ ] Set up API call structure
@@ -111,15 +111,15 @@ This roadmap outlines the development tasks to evolve the current Hello World pr
   - [ ] Create bridge between LLM responses and calculator API
   - [ ] Add error handling for malformed function calls
 
-- [ ] **3.6 Connect chat UI to LLM module**
-  - [ ] Implement send button functionality
-  - [ ] Display user and assistant messages
-  - [ ] Show calculation results in both chat and calculator display
+- [x] **3.6 Connect chat UI to LLM module**
+  - [x] Implement send button functionality
+  - [x] Display user and assistant messages
+  - [x] Show calculation results in both chat and calculator display
 
-- [ ] **3.7 Implement conversation history management**
-  - [ ] Create storage for chat history
-  - [ ] Add method to update and retrieve conversation context
-  - [ ] Ensure context is properly passed to LLM API
+- [x] **3.7 Implement conversation history management**
+  - [x] Create storage for chat history
+  - [x] Add method to update and retrieve conversation context
+  - [x] Ensure context is properly passed to LLM API
 
 ## Phase 4: Advanced Features & Refinement
 
