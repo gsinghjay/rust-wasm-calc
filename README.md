@@ -38,13 +38,38 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
 
 The codebase is organized into the following modules:
 
+#### Rust Backend
+
 - **calculator**: Core calculator functionality
   - **operations.rs**: Basic arithmetic operations
   - **memory.rs**: Memory-related functions
+  - **mod.rs**: Module exports and organization
 - **state**: State management for the calculator
   - **types.rs**: Type definitions (Operation enum, CalculatorState struct)
   - **operations.rs**: Methods for manipulating calculator state
+  - **mod.rs**: Module exports and organization
 - **errors.rs**: Error handling and standardized error types
+- **lib.rs**: Main library entry point and WebAssembly exports
+
+#### JavaScript Frontend
+
+- **js/calculator.js**: Main entry point for the calculator UI
+- **js/calculator/**: Modular JavaScript components
+  - **controller.js**: CalculatorController class for UI-WASM interaction
+  - **events.js**: Event handling for buttons and keyboard input
+  - **display.js**: Display formatting and updates
+  - **memory.js**: Memory operations interface
+
+#### Tests
+
+- **tests/calculator/**: Tests for calculator operations
+  - **operations_tests.rs**: Tests for arithmetic operations
+  - **memory_tests.rs**: Tests for memory functions
+- **tests/state/**: Tests for state management
+  - **types_tests.rs**: Tests for state type definitions
+  - **operations_tests.rs**: Tests for state operations
+  - **mod.rs**: Integration tests for state management
+- **tests/web.rs**: WASM-specific integration tests
 
 ### API
 
@@ -99,6 +124,28 @@ The codebase is organized into the following modules:
 - **`memory_add(value: f64)`**: Adds a value to the current value stored in memory
 - **`memory_subtract(value: f64)`**: Subtracts a value from the current value stored in memory
 
+#### State Management
+
+The calculator uses a state management system to track the current state of the calculator:
+
+- **`CalculatorState`**: Main state container for the calculator
+  - **`display_value()`**: Gets the current display value
+  - **`input_digit(digit: u8)`**: Inputs a digit (0-9)
+  - **`input_decimal()`**: Inputs a decimal point
+  - **`toggle_sign()`**: Toggles the sign of the current value
+  - **`backspace()`**: Removes the last character
+  - **`set_operation(operation: Operation)`**: Sets the current operation
+  - **`calculate()`**: Performs the calculation
+  - **`clear()`**: Clears the calculator state
+  - **`clear_entry()`**: Clears the current entry
+
+- **`Operation`**: Enum representing different operations
+  - `None`: No operation
+  - `Add`: Addition
+  - `Subtract`: Subtraction
+  - `Multiply`: Multiplication
+  - `Divide`: Division
+
 #### Error Handling
 
 The calculator uses a standardized error handling system:
@@ -114,39 +161,54 @@ The calculator uses a standardized error handling system:
 
 - **`error_to_js_string_by_type(error_type, message)`**: Converts error information to a JavaScript-friendly string
 
+### JavaScript Architecture
+
+The JavaScript frontend follows a modular architecture:
+
+1. **Main Module (`calculator.js`)**: 
+   - Initializes the calculator
+   - Connects WASM functions to the UI
+   - Serves as the entry point
+
+2. **Controller (`controller.js`)**: 
+   - Manages the interaction between UI and WASM
+   - Handles user input and updates the display
+   - Maintains the calculator state
+
+3. **Events (`events.js`)**: 
+   - Handles button click events
+   - Manages keyboard input
+   - Dynamically adds UI elements
+
+4. **Display (`display.js`)**: 
+   - Formats values for display
+   - Updates the display element
+   - Handles error display
+
+5. **Memory (`memory.js`)**: 
+   - Provides a clean interface to WASM memory functions
+   - Manages memory operations
+
 **Example Usage (JavaScript):**
 
 ```javascript
 import init, { hello, add, subtract, multiply, divide, memory_store, memory_recall } from './pkg/rust_wasm_calc.js';
+import { initCalculator } from './js/calculator.js';
 
 async function run() {
   await init();
   
-  // Basic greeting
-  const message = hello("User");
-  console.log(message); // Output: Hello, User!
+  // Create calculator functions object
+  const calculatorFunctions = {
+    memory_store,
+    memory_recall,
+    memory_clear,
+    memory_add,
+    memory_subtract
+  };
   
-  // Calculator operations
-  console.log(add(2, 3)); // Output: 5
-  console.log(subtract(5, 3)); // Output: 2
-  console.log(multiply(2, 3)); // Output: 6
-  
-  // Division with error handling
-  try {
-    const result = divide(6, 3);
-    console.log(result); // Output: 2
-  } catch (e) {
-    console.error(e); // Error message if division by zero
-  }
-  
-  // Memory operations
-  memory_store(10);
-  memory_add(5);
-  console.log(memory_recall()); // Output: 15
-  memory_subtract(3);
-  console.log(memory_recall()); // Output: 12
-  memory_clear();
-  console.log(memory_recall()); // Output: 0
+  // Initialize the calculator UI
+  const calculator = initCalculator(calculatorFunctions);
 }
 
 run();
@@ -217,7 +279,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Memory functions
 - [x] Error handling
 - [x] Modular code organization
-- [ ] UI Interaction & State Management
+- [x] UI Interaction & State Management
 - [ ] LLM Chatbot Integration
 - [ ] Advanced Features & Refinement
 
