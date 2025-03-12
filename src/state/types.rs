@@ -34,6 +34,12 @@ pub struct CalculatorState {
     pub(crate) error_state: bool,
 }
 
+impl Default for CalculatorState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Constructor and basic getters for CalculatorState
 #[wasm_bindgen]
 impl CalculatorState {

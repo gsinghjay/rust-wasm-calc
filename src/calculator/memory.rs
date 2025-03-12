@@ -13,7 +13,7 @@ use wasm_bindgen::prelude::*;
 
 // Memory storage for calculator operations
 thread_local! {
-    static MEMORY: std::cell::RefCell<f64> = std::cell::RefCell::new(0.0);
+    static MEMORY: std::cell::RefCell<f64> = const { std::cell::RefCell::new(0.0) };
 }
 
 /// Stores a value in the calculator's memory.
