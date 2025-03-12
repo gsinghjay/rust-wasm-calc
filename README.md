@@ -59,6 +59,13 @@ The codebase is organized into the following modules:
   - **events.js**: Event handling for buttons and keyboard input
   - **display.js**: Display formatting and updates
   - **memory.js**: Memory operations interface
+- **js/chatbot.js**: Chatbot interface implementation
+- **js/navigation.js**: Navigation system for switching between views
+
+#### HTML/CSS Structure
+
+- **index.html**: Main HTML file with responsive layout
+- **custom.css**: Custom styles for calculator and chatbot interfaces
 
 #### Tests
 
@@ -189,11 +196,24 @@ The JavaScript frontend follows a modular architecture:
    - Provides a clean interface to WASM memory functions
    - Manages memory operations
 
+6. **Chatbot (`chatbot.js`)**:
+   - Implements chat interface for natural language calculations
+   - Processes user messages and generates responses
+   - Integrates with calculator functions
+   - Manages conversation history
+
+7. **Navigation (`navigation.js`)**:
+   - Handles switching between different application views
+   - Manages URL hash-based routing
+   - Updates active navigation state
+
 **Example Usage (JavaScript):**
 
 ```javascript
 import init, { hello, add, subtract, multiply, divide, memory_store, memory_recall } from './pkg/rust_wasm_calc.js';
 import { initCalculator } from './js/calculator.js';
+import { initChatbot } from './js/chatbot.js';
+import { initNavigation } from './js/navigation.js';
 
 async function run() {
   await init();
@@ -209,6 +229,12 @@ async function run() {
   
   // Initialize the calculator UI
   const calculator = initCalculator(calculatorFunctions);
+  
+  // Initialize the chatbot UI
+  initChatbot(calculatorFunctions);
+  
+  // Initialize navigation
+  initNavigation();
 }
 
 run();
@@ -280,8 +306,18 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Error handling
 - [x] Modular code organization
 - [x] UI Interaction & State Management
-- [ ] LLM Chatbot Integration
+- [x] Navigation system with landing page
+- [x] Basic chatbot interface
+- [ ] LLM API integration
 - [ ] Advanced Features & Refinement
+
+## 🌟 Features
+
+- **Traditional Calculator Interface**: Standard calculator with memory functions
+- **Chatbot Calculator Interface**: Natural language interface for calculations
+- **Responsive Design**: Works on desktop and mobile devices
+- **Memory Functions**: Store, recall, add, and subtract values from memory
+- **Error Handling**: Comprehensive error handling for all operations
 
 ## 📚 Documentation Standards
 
