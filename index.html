@@ -101,12 +101,12 @@
                                 <button class="btn btn-light w-100 btn-calc">.</button>
                             </div>
                             <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-calc">=</button>
+                                <button class="btn btn-success w-100 btn-calc">=</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-light text-center text-muted">
+                <div class="card-footer text-center text-muted">
                     <small>Press <kbd>Esc</kbd> to clear, <kbd>Enter</kbd> to calculate</small>
                 </div>
             </div>
@@ -130,7 +130,8 @@
         // Initialize WASM
         async function run() {
             try {
-                const wasmModule = await init();
+                // Initialize the WASM module
+                await init();
                 
                 // Create an object with the calculator functions
                 const calculatorFunctions = {
@@ -143,10 +144,6 @@
                 
                 // Initialize the calculator UI
                 initCalculator(calculatorFunctions);
-                
-                // Update the display to show it's ready
-                const display = document.getElementById('display');
-                display.textContent = "0";
             } catch (e) {
                 const display = document.getElementById('display');
                 display.textContent = `Error: ${e.message}`;
