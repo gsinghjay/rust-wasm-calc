@@ -7,7 +7,7 @@
 
 ## Overview
 
-Rust WASM Calculator is a WebAssembly calculator application. It is built using Rust and Bootstrap 5. The project follows test-driven development practices.
+Rust WASM Calculator is a WebAssembly calculator application. It is built using Rust and Bootstrap 5. The project follows test-driven development practices and SOLID principles.
 
 ## 🚀 Quick Start
 
@@ -34,6 +34,18 @@ Rust WASM Calculator is a WebAssembly calculator application. It is built using 
 
 The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --target web` to generate the package in the `pkg/` directory.
 
+### Project Structure
+
+The codebase is organized into the following modules:
+
+- **calculator**: Core calculator functionality
+  - **operations.rs**: Basic arithmetic operations
+  - **memory.rs**: Memory-related functions
+- **state**: State management for the calculator
+  - **types.rs**: Type definitions (Operation enum, CalculatorState struct)
+  - **operations.rs**: Methods for manipulating calculator state
+- **errors.rs**: Error handling and standardized error types
+
 ### API
 
 #### `hello(name: &str) -> String`
@@ -43,7 +55,9 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `name`:  The name to include in the greeting.
 - **Returns:**  A string formatted as "Hello, {name}!".
 
-#### `add(a: f64, b: f64) -> f64`
+#### Calculator Operations
+
+##### `add(a: f64, b: f64) -> f64`
 
 - **Description:** Adds two numbers and returns the result.
 - **Parameters:**
@@ -51,7 +65,7 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `b`: Second operand
 - **Returns:** The sum of `a` and `b`
 
-#### `subtract(a: f64, b: f64) -> f64`
+##### `subtract(a: f64, b: f64) -> f64`
 
 - **Description:** Subtracts the second number from the first and returns the result.
 - **Parameters:**
@@ -59,7 +73,7 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `b`: Second operand
 - **Returns:** The difference `a - b`
 
-#### `multiply(a: f64, b: f64) -> f64`
+##### `multiply(a: f64, b: f64) -> f64`
 
 - **Description:** Multiplies two numbers and returns the result.
 - **Parameters:**
@@ -67,7 +81,7 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `b`: Second operand
 - **Returns:** The product of `a` and `b`
 
-#### `divide(a: f64, b: f64) -> Result<f64, String>`
+##### `divide(a: f64, b: f64) -> Result<f64, CalculatorError>`
 
 - **Description:** Divides the first number by the second and returns the result.
 - **Parameters:**
@@ -75,7 +89,7 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
     - `b`: Divisor (denominator)
 - **Returns:** 
     - `Ok(result)`: The quotient `a / b` if successful
-    - `Err(message)`: An error message if division by zero is attempted
+    - `Err(error)`: A `CalculatorError` if division by zero is attempted
 
 #### Memory Functions
 
@@ -84,6 +98,21 @@ The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --tar
 - **`memory_clear()`**: Clears the calculator's memory by setting it to zero
 - **`memory_add(value: f64)`**: Adds a value to the current value stored in memory
 - **`memory_subtract(value: f64)`**: Subtracts a value from the current value stored in memory
+
+#### Error Handling
+
+The calculator uses a standardized error handling system:
+
+- **`CalculatorErrorType`**: Enum representing different error types:
+  - `DivisionByZero`: Division by zero error
+  - `InvalidInput`: Invalid input error
+  - `Overflow`: Result too large
+  - `Underflow`: Result too small
+  - `CalculationError`: General calculation error
+
+- **`CalculatorError`**: Struct containing error type and message
+
+- **`error_to_js_string_by_type(error_type, message)`**: Converts error information to a JavaScript-friendly string
 
 **Example Usage (JavaScript):**
 
@@ -105,13 +134,9 @@ async function run() {
   // Division with error handling
   try {
     const result = divide(6, 3);
-    if (result.err) {
-      console.error(result.err);
-    } else {
-      console.log(result.ok); // Output: 2
-    }
+    console.log(result); // Output: 2
   } catch (e) {
-    console.error(e);
+    console.error(e); // Error message if division by zero
   }
   
   // Memory operations
@@ -191,6 +216,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Calculator operations
 - [x] Memory functions
 - [x] Error handling
+- [x] Modular code organization
 - [ ] UI Interaction & State Management
 - [ ] LLM Chatbot Integration
 - [ ] Advanced Features & Refinement
