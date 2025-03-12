@@ -6,8 +6,11 @@
 
 use wasm_bindgen_test::*;
 use rust_wasm_calc::hello;
-use wasm_bindgen::JsValue;
-use wasm_bindgen_futures::JsFuture;
+use rust_wasm_calc::calculator::{
+    add, subtract, multiply, divide_wasm,
+    memory_store, memory_recall, memory_clear, memory_add, memory_subtract
+};
+use rust_wasm_calc::state::types::{CalculatorState, Operation};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -150,4 +153,80 @@ async fn test_concurrent_calls() {
     }
 
     assert_eq!(counter.load(Ordering::SeqCst), 5);
+}
+
+/// Tests calculator operations in a browser environment.
+///
+/// This test verifies that:
+/// - Basic arithmetic operations work through WASM
+/// - Results are correctly returned to JavaScript
+#[wasm_bindgen_test]
+fn test_calculator_operations() {
+    assert_eq!(add(2.0, 3.0), 5.0);
+    assert_eq!(subtract(5.0, 3.0), 2.0);
+    assert_eq!(multiply(2.0, 3.0), 6.0);
+    
+    // Test division with valid input
+    let result = divide_wasm(6.0, 3.0);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), 2.0);
+    
+    // Test division by zero
+    let error = divide_wasm(1.0, 0.0);
+    assert!(error.is_err());
+}
+
+/// Tests memory operations in a browser environment.
+///
+/// This test verifies that:
+/// - Memory operations work through WASM
+/// - Memory state is maintained between calls
+#[wasm_bindgen_test]
+fn test_memory_operations() {
+    // Clear memory to ensure a known state
+    memory_clear();
+    assert_eq!(memory_recall(), 0.0);
+    
+    // Store and recall
+    memory_store(42.0);
+    assert_eq!(memory_recall(), 42.0);
+    
+    // Add to memory
+    memory_add(8.0);
+    assert_eq!(memory_recall(), 50.0);
+    
+    // Subtract from memory
+    memory_subtract(10.0);
+    assert_eq!(memory_recall(), 40.0);
+    
+    // Clear again
+    memory_clear();
+    assert_eq!(memory_recall(), 0.0);
+}
+
+/// Tests calculator state management in a browser environment.
+///
+/// This test verifies that:
+/// - CalculatorState can be created and manipulated through WASM
+/// - State operations work correctly in the browser
+#[wasm_bindgen_test]
+fn test_calculator_state() {
+    let mut state = CalculatorState::new();
+    
+    // Initial state
+    assert_eq!(state.display_value(), "0");
+    
+    // Input a number
+    state.input_digit(5);
+    assert_eq!(state.display_value(), "5");
+    
+    // Perform a calculation
+    state.set_operation(Operation::Add);
+    state.input_digit(3);
+    state.calculate();
+    assert_eq!(state.display_value(), "8");
+    
+    // Clear the state
+    state.clear();
+    assert_eq!(state.display_value(), "0");
 } 
