@@ -34,6 +34,18 @@ Rust WASM Calculator is a WebAssembly calculator application. It is built using 
 
 The `rust-wasm-calc` package is built to WebAssembly. Use `wasm-pack build --target web` to generate the package in the `pkg/` directory.
 
+For the server-side components and LLM integration, you'll also need to install the Node.js dependencies:
+
+```bash
+npm install
+```
+
+To start the server with the LLM integration:
+
+```bash
+npm start
+```
+
 ### Project Structure
 
 The codebase is organized into the following modules:
@@ -61,6 +73,7 @@ The codebase is organized into the following modules:
   - **memory.js**: Memory operations interface
 - **js/chatbot.js**: Chatbot interface implementation
 - **js/navigation.js**: Navigation system for switching between views
+- **js/api.js**: API communication with Anthropic Claude
 
 #### HTML/CSS Structure
 
@@ -77,6 +90,36 @@ The codebase is organized into the following modules:
   - **operations_tests.rs**: Tests for state operations
   - **mod.rs**: Integration tests for state management
 - **tests/web.rs**: WASM-specific integration tests
+
+#### Server
+
+- **server.js**: Express server for secure API communication
+- **.env**: Environment variables (API keys)
+
+### LLM Integration
+
+The calculator includes an AI assistant powered by Anthropic's Claude model. The integration:
+
+1. Allows natural language interaction with the calculator
+2. Supports function calling for calculator operations
+3. Maintains conversation context for multi-turn interactions
+4. Securely handles API keys through a server-side proxy
+
+To use the LLM features:
+
+1. Add your Anthropic API key to the `.env` file:
+   ```
+   ANTHROPIC_API_KEY=your_api_key_here
+   ```
+2. Start the server with `npm start`
+3. Navigate to the Chatbot tab in the UI
+4. Ask questions or give commands like:
+   - "What's 125 × 37?"
+   - "Store 42 in memory"
+   - "What's the value in memory?"
+   - "Clear the memory"
+
+The LLM integration uses a secure server-side proxy to protect your API key and implements proper error handling for a robust user experience.
 
 ### API
 

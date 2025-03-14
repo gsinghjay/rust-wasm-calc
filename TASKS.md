@@ -89,27 +89,27 @@ This roadmap outlines the development tasks to evolve the current Hello World pr
   - [x] Style according to existing theme
   - [x] Follow web-interface.mdc rules for HTML/CSS
 
-- [ ] **3.2 Write tests for LLM function calling interface**
-  - [ ] Create tests for function definitions
-  - [ ] Test message processing
-  - [ ] Test function call handling
-  - [ ] Follow testing.mdc rules
+- [x] **3.2 Write tests for LLM function calling interface**
+  - [x] Create tests for function definitions
+  - [x] Test message processing
+  - [x] Test function call handling
+  - [x] Follow testing.mdc rules
 
 - [x] **3.3 Create JavaScript module for LLM integration**
   - [x] Implement calculator function definitions
   - [x] Set up message and conversation handling
   - [x] Document according to js/**.js rules in documentation.mdc
 
-- [ ] **3.4 Implement API connection to chosen LLM**
-  - [ ] Set up API call structure
-  - [ ] Implement authentication
-  - [ ] Create error handling for API failures
-  - [ ] Follow web-interface.mdc rules
+- [x] **3.4 Implement API connection to chosen LLM**
+  - [x] Set up API call structure
+  - [x] Implement authentication
+  - [x] Create error handling for API failures
+  - [x] Follow web-interface.mdc rules
 
-- [ ] **3.5 Write function call handler**
-  - [ ] Implement parser for LLM function calls
-  - [ ] Create bridge between LLM responses and calculator API
-  - [ ] Add error handling for malformed function calls
+- [x] **3.5 Write function call handler**
+  - [x] Implement parser for LLM function calls
+  - [x] Create bridge between LLM responses and calculator API
+  - [x] Add error handling for malformed function calls
 
 - [x] **3.6 Connect chat UI to LLM module**
   - [x] Implement send button functionality
