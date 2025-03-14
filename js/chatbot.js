@@ -3,6 +3,8 @@
  * Handles chat interface and integration with calculator functions
  */
 
+import { sendToLLM, defineCalculatorTools, parseFunctionCalls } from './api.js';
+
 /**
  * Initialize the chatbot functionality
  * @param {Object} calculatorFunctions - Object containing WASM calculator functions
@@ -16,6 +18,9 @@ export function initChatbot(calculatorFunctions) {
     
     // Chat history for context
     let chatHistory = [];
+    
+    // Define calculator tools for the LLM
+    const tools = defineCalculatorTools();
     
     /**
      * Add a message to the chat interface
@@ -61,101 +66,35 @@ export function initChatbot(calculatorFunctions) {
         setStatus('processing');
         
         try {
-            // For now, we'll implement a simple pattern matching system
-            // In Phase 3, this will be replaced with actual LLM integration
+            // Format messages for the API
+            const messages = chatHistory.map(msg => ({
+                role: msg.role,
+                content: msg.content
+            }));
             
-            // Simple calculation pattern: "calculate X operator Y"
-            const calcPattern = /calculate\s+(-?\d+\.?\d*)\s*([+\-*/×÷])\s*(-?\d+\.?\d*)/i;
-            const calcMatch = message.match(calcPattern);
+            // Send to LLM
+            const response = await sendToLLM(messages, tools);
             
-            if (calcMatch) {
-                const num1 = parseFloat(calcMatch[1]);
-                const operator = calcMatch[2];
-                const num2 = parseFloat(calcMatch[3]);
-                
-                let result;
-                
-                // Perform calculation
-                switch (operator) {
-                    case '+':
-                        result = num1 + num2;
-                        break;
-                    case '-':
-                        result = num1 - num2;
-                        break;
-                    case '*':
-                    case '×':
-                        result = num1 * num2;
-                        break;
-                    case '/':
-                    case '÷':
-                        if (num2 === 0) {
-                            addMessage("I can't divide by zero!", 'assistant');
-                            setStatus('ready');
-                            return;
-                        }
-                        result = num1 / num2;
-                        break;
-                    default:
-                        addMessage("I don't understand that operator.", 'assistant');
-                        setStatus('ready');
-                        return;
+            // Extract assistant message
+            let assistantMessage = '';
+            if (response.content && Array.isArray(response.content)) {
+                for (const content of response.content) {
+                    if (content.type === 'text') {
+                        assistantMessage += content.text;
+                    }
                 }
-                
-                // Format the result
-                const formattedResult = Number.isInteger(result) ? result.toString() : result.toFixed(4).replace(/\.?0+$/, '');
-                
-                // Respond with the result
-                addMessage(`The result of ${num1} ${operator} ${num2} is ${formattedResult}`, 'assistant');
-                
-                // Update calculator display if it's visible
-                const display = document.getElementById('display');
-                if (display && !display.closest('section').classList.contains('d-none')) {
-                    display.textContent = formattedResult;
-                }
-            } 
-            // Memory store pattern
-            else if (/store\s+(-?\d+\.?\d*)\s+in\s+memory/i.test(message)) {
-                const match = message.match(/store\s+(-?\d+\.?\d*)\s+in\s+memory/i);
-                const value = parseFloat(match[1]);
-                
-                // Call WASM function
-                calculatorFunctions.memory_store(value);
-                
-                addMessage(`I've stored ${value} in memory.`, 'assistant');
             }
-            // Memory recall pattern
-            else if (/recall\s+memory|what\'s\s+in\s+memory/i.test(message)) {
-                // Call WASM function
-                const value = calculatorFunctions.memory_recall();
-                
-                addMessage(`The value in memory is ${value}.`, 'assistant');
+            
+            // Add assistant message to chat
+            if (assistantMessage) {
+                addMessage(assistantMessage, 'assistant');
             }
-            // Memory clear pattern
-            else if (/clear\s+memory/i.test(message)) {
-                // Call WASM function
-                calculatorFunctions.memory_clear();
-                
-                addMessage(`I've cleared the memory.`, 'assistant');
-            }
-            // Help pattern
-            else if (/help|what can you do/i.test(message)) {
-                addMessage(
-                    "I can help with calculations. Try asking me things like:\n" +
-                    "- Calculate 125 × 37\n" +
-                    "- Store 42 in memory\n" +
-                    "- Recall memory\n" +
-                    "- Clear memory\n" +
-                    "In the future, I'll be able to handle more complex calculations and formulas!",
-                    'assistant'
-                );
-            }
-            // Default response
-            else {
-                addMessage(
-                    "I'm not sure how to help with that yet. Try asking me to calculate something, like 'Calculate 125 × 37'.",
-                    'assistant'
-                );
+            
+            // Handle function calls
+            const functionCalls = parseFunctionCalls(response);
+            
+            for (const call of functionCalls) {
+                await handleFunctionCall(call);
             }
         } catch (error) {
             console.error('Error processing message:', error);
@@ -164,6 +103,72 @@ export function initChatbot(calculatorFunctions) {
         
         // Set status back to ready
         setStatus('ready');
+    }
+    
+    /**
+     * Handle a function call from the LLM
+     * @param {Object} functionCall - The function call object
+     */
+    async function handleFunctionCall(functionCall) {
+        const { name, arguments: args } = functionCall;
+        
+        try {
+            let result;
+            
+            switch (name) {
+                case 'calculate':
+                    const { num1, num2, operation } = args;
+                    
+                    switch (operation) {
+                        case 'add':
+                            result = num1 + num2;
+                            break;
+                        case 'subtract':
+                            result = num1 - num2;
+                            break;
+                        case 'multiply':
+                            result = num1 * num2;
+                            break;
+                        case 'divide':
+                            if (num2 === 0) {
+                                addMessage("I can't divide by zero!", 'assistant');
+                                return;
+                            }
+                            result = num1 / num2;
+                            break;
+                    }
+                    
+                    // Format the result
+                    const formattedResult = Number.isInteger(result) ? result.toString() : result.toFixed(4).replace(/\.?0+$/, '');
+                    
+                    // Update calculator display if it's visible
+                    const display = document.getElementById('display');
+                    if (display && !display.closest('section').classList.contains('d-none')) {
+                        display.textContent = formattedResult;
+                    }
+                    
+                    addMessage(`The result of ${operation}(${num1}, ${num2}) is ${formattedResult}`, 'assistant');
+                    break;
+                    
+                case 'memory_store':
+                    calculatorFunctions.memory_store(args.value);
+                    addMessage(`I've stored ${args.value} in memory.`, 'assistant');
+                    break;
+                    
+                case 'memory_recall':
+                    result = calculatorFunctions.memory_recall();
+                    addMessage(`The value in memory is ${result}.`, 'assistant');
+                    break;
+                    
+                case 'memory_clear':
+                    calculatorFunctions.memory_clear();
+                    addMessage(`I've cleared the memory.`, 'assistant');
+                    break;
+            }
+        } catch (error) {
+            console.error(`Error executing function ${name}:`, error);
+            addMessage(`Sorry, I encountered an error executing the ${name} function.`, 'assistant');
+        }
     }
     
     /**
